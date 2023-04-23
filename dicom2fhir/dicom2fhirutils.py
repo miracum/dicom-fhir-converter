@@ -1,12 +1,13 @@
-from datetime import datetime
+from datetime import datetime, date
 
 from fhir.resources import imagingstudy
 from fhir.resources import identifier
 from fhir.resources import codeableconcept
+from fhir.resources import codeablereference
 from fhir.resources import coding
 from fhir.resources import patient
 from fhir.resources import humanname
-from fhir.resources import fhirdate
+from fhir.resources import fhirtypes
 from fhir.resources import reference
 
 TERMINOLOGY_CODING_SYS = "http://terminology.hl7.org/CodeSystem/v2-0203"
@@ -14,6 +15,8 @@ TERMINOLOGY_CODING_SYS_CODE_ACCESSION = "ACSN"
 TERMINOLOGY_CODING_SYS_CODE_MRN = "MR"
 
 ACQUISITION_MODALITY_SYS = "http://dicom.nema.org/resources/ontology/DCM"
+SCANNING_SEQUENCE_SYS = "https://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_C.8.3.html"
+SCANNING_VARIANT_SYS = "https://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_C.8.3.html"
 
 SOP_CLASS_SYS = "urn:ietf:rfc:3986"
 
@@ -77,10 +80,13 @@ def calc_dob(dicom_dob):
     if dicom_dob == '':
         return None
 
-    fhir_dob = fhirdate.FHIRDate()
     try:
         dob = datetime.strptime(dicom_dob, '%Y%m%d')
-        fhir_dob.date = dob
+        fhir_dob = fhirtypes.Date(
+            dob.year,
+            dob.month,
+            dob.day
+        )
     except Exception:
         return None
     return fhir_dob
@@ -90,11 +96,12 @@ def inline_patient_resource(referenceId, PatientID, IssuerOfPatientID, patientNa
     p = patient.Patient()
     p.id = referenceId
     p.name = []
-    p.use = "official"
+    # p.use = "official"
     p.identifier = [get_patient_resource_ids(PatientID, IssuerOfPatientID)]
     hn = humanname.HumanName()
     hn.family = patientName.family_name
-    hn.given = [patientName.given_name]
+    if patientName.given_name != '':
+        hn.given = [patientName.given_name]
     p.name.append(hn)
     p.gender = calc_gender(gender)
     p.birthDate = calc_dob(dob)
@@ -125,13 +132,28 @@ def gen_started_datetime(dt, tm):
     if dt is None:
         return None
 
-    fhirDtm = fhirdate.FHIRDate()
-    fhirDtm.date = datetime.strptime(dt, '%Y%m%d')
-    if tm is None or len(tm) < 6:
-        return fhirDtm
-    studytm = datetime.strptime(tm[0:6], '%H%M%S')
+    dt_pattern = '%Y%m%d'
 
-    fhirDtm.date = fhirDtm.date.replace(hour=studytm.hour, minute=studytm.minute, second=studytm.second)
+    if tm is not None and len(tm) >= 6:
+        studytm = datetime.strptime(tm[0:6], '%H%M%S')
+
+        dt_string = dt + " " + str(studytm.hour) + ":" + \
+            str(studytm.minute) + ":" + str(studytm.second)
+        dt_pattern = dt_pattern + " %H:%M:%S"
+    else:
+        dt_string = dt
+
+    dt_date = datetime.strptime(dt_string, dt_pattern)
+
+    # strangely, providing the datetime.date object does not work
+    fhirDtm = fhirtypes.DateTime(
+        dt_date.year,
+        dt_date.month,
+        dt_date.day,
+        dt_date.hour,
+        dt_date.minute,
+        dt_date.second
+    )
 
     return fhirDtm
 
@@ -158,10 +180,42 @@ def gen_reason(reason, reasonStr):
     return reasonList
 
 
-def gen_modality_coding(mod):
+def gen_modality_cc(mod):
+    c = codeableconcept.CodeableConcept()
+    c.coding = []
+    m = coding.Coding()
+    m.system = ACQUISITION_MODALITY_SYS
+    m.code = mod
+    c.coding.append(m)
+    return c
+
+
+def gen_bodysite_cr(bd):
+    c = codeablereference.CodeableReference()
+    c.concept = codeableconcept.CodeableConcept()
+    c.concept.coding = []
+    b = coding.Coding()
+    b.system = "http://hl7.org/fhir/ValueSet/body-site"
+    b.code = bd
+    c.concept.coding.append(b)
+    return c
+
+
+def gen_scanningsequence_coding(value):
     c = coding.Coding()
-    c.system = ACQUISITION_MODALITY_SYS
-    c.code = mod
+    c.system = SCANNING_SEQUENCE_SYS
+    c.code = value
+    return c
+
+
+def gen_scanningvariant_coding(value_list):
+    c = codeableconcept.CodeableConcept()
+    c.coding = []
+    for _l in value_list:
+        m = coding.Coding()
+        m.system = SCANNING_VARIANT_SYS
+        m.code = _l
+        c.coding.append(m)
     return c
 
 
@@ -171,7 +225,9 @@ def update_study_modality_list(study: imagingstudy.ImagingStudy, modality: codin
         study.modality.append(modality)
         return
 
-    c = next((mc for mc in study.modality if mc.system == modality.system and mc.code == modality.code), None)
+    c = next((mc for mc in study.modality if
+              mc.coding[0].system == modality.coding[0].system and
+              mc.coding[0].code == modality.coding[0].code), None)
     if c is not None:
         return
 
