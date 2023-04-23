@@ -141,7 +141,7 @@ def _add_imaging_study_series(study: fr.imagingstudy.ImagingStudy, ds: dataset.F
         except Exception:
             pass
         try:
-            series_data["echoTimes"] = ds[0x0018, 0x0081].value
+            series_data["echoTime"] = ds[0x0018, 0x0081].value
         except Exception:
             pass
 
