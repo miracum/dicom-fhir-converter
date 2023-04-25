@@ -180,42 +180,28 @@ def gen_reason(reason, reasonStr):
     return reasonList
 
 
-def gen_modality_cc(mod):
+def gen_coding(value, system):
+    c = coding.Coding()
+    c.system = system
+    c.code = value
+    return c
+
+
+def gen_codeable_concept(value_list: list, system):
     c = codeableconcept.CodeableConcept()
     c.coding = []
-    m = coding.Coding()
-    m.system = ACQUISITION_MODALITY_SYS
-    m.code = mod
-    c.coding.append(m)
+    for _l in value_list:
+        m = gen_coding(_l, system)
+        c.coding.append(m)
     return c
 
 
 def gen_bodysite_cr(bd):
     c = codeablereference.CodeableReference()
-    c.concept = codeableconcept.CodeableConcept()
-    c.concept.coding = []
-    b = coding.Coding()
-    b.system = "http://hl7.org/fhir/ValueSet/body-site"
-    b.code = bd
-    c.concept.coding.append(b)
-    return c
-
-
-def gen_scanningsequence_coding(value):
-    c = coding.Coding()
-    c.system = SCANNING_SEQUENCE_SYS
-    c.code = value
-    return c
-
-
-def gen_scanningvariant_coding(value_list):
-    c = codeableconcept.CodeableConcept()
-    c.coding = []
-    for _l in value_list:
-        m = coding.Coding()
-        m.system = SCANNING_VARIANT_SYS
-        m.code = _l
-        c.coding.append(m)
+    c.concept = gen_codeable_concept(
+        value_list=[bd],
+        system="http://hl7.org/fhir/ValueSet/body-site"
+    )
     return c
 
 
@@ -235,11 +221,36 @@ def update_study_modality_list(study: imagingstudy.ImagingStudy, modality: codin
     return
 
 
-def gen_instance_sopclass(SOPClassUID):
-    c = coding.Coding()
-    c.system = SOP_CLASS_SYS
-    c.code = "urn:oid:" + SOPClassUID
-    return c
+def update_study_bodysite_list(study: imagingstudy.ImagingStudy, bodysite: codeablereference.CodeableReference):
+    if study.bodySite__ext is None or len(study.bodySite__ext) <= 0:
+        study.bodySite__ext = []
+        study.bodySite__ext.append(bodysite)
+        return
+
+    c = next((mc for mc in study.bodySite__ext if
+              mc.conecpt.coding[0].system == bodysite.conecpt.coding[0].system and
+              mc.conecpt.coding[0].code == bodysite.conecpt.coding[0].code), None)
+    if c is not None:
+        return
+
+    study.bodySite__ext.append(bodysite)
+    return
+
+
+def update_study_laterality_list(study: imagingstudy.ImagingStudy, laterality: codeableconcept.CodeableConcept):
+    if study.laterality__ext is None or len(study.laterality__ext) <= 0:
+        study.laterality__ext = []
+        study.laterality__ext.append(laterality)
+        return
+
+    c = next((mc for mc in study.laterality__ext if
+              mc.coding[0].system == laterality.coding[0].system and
+              mc.coding[0].code == laterality.coding[0].code), None)
+    if c is not None:
+        return
+
+    study.laterality__ext.append(laterality)
+    return
 
 
 def gen_coding_text_only(text):
