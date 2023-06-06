@@ -1,18 +1,36 @@
 import uuid
 import os
 from fhir import resources as fr
+from fhir.resources import fhirtypes
 from pydicom import dcmread
 from pydicom import dataset
+from tqdm import tqdm
+import logging
 
 from . import dicom2fhirutils
 
+import sys
+add_path = os.path.abspath(
+    os.path.join(
+        os.path.dirname(os.path.realpath(__file__)),
+        "../../dicom-fhir-extension/"
+    )
+)
+print(add_path)
+sys.path.append(add_path)
+from FeasibilityExtension import ImagingStudySeriesErlangen, ImagingStudyErlangen
 
-def _add_imaging_study_instance(study: fr.imagingstudy.ImagingStudy, series: fr.imagingstudy.ImagingStudySeries,
-                                ds: dataset.FileDataset, fp):
+
+def _add_imaging_study_instance(
+    study: ImagingStudyErlangen,
+    series: ImagingStudySeriesErlangen,
+    ds: dataset.FileDataset
+):
     selectedInstance = None
     instanceUID = ds.SOPInstanceUID
     if series.instance is not None:
-        selectedInstance = next((i for i in series.instance if i.uid == instanceUID), None)
+        selectedInstance = next(
+            (i for i in series.instance if i.uid == instanceUID), None)
     else:
         series.instance = []
 
@@ -21,19 +39,27 @@ def _add_imaging_study_instance(study: fr.imagingstudy.ImagingStudy, series: fr.
         print(selectedInstance.as_json())
         return
 
-    selectedInstance = fr.imagingstudy.ImagingStudySeriesInstance()
-    selectedInstance.uid = instanceUID
-    selectedInstance.sopClass = dicom2fhirutils.gen_instance_sopclass(ds.SOPClassUID)
-    selectedInstance.number = ds.InstanceNumber
+    instance_data = {}
+
+    instance_data["uid"] = instanceUID
+    instance_data["sopClass"] = dicom2fhirutils.gen_coding(
+        value="urn:oid:" + ds.SOPClassUID,
+        system=dicom2fhirutils.SOP_CLASS_SYS
+    )
+    instance_data["number"] = ds.InstanceNumber
 
     try:
-        if series.modality.code == "SR":
+        if series.modality.coding[0].code == "SR":
             seq = ds.ConceptNameCodeSequence
-            selectedInstance.title = seq[0x0008, 0x0104]
+            instance_data["title"] = seq[0x0008, 0x0104]
         else:
-            selectedInstance.title = '\\'.join(ds.ImageType)
+            instance_data["title"] = '\\'.join(ds.ImageType)
     except Exception:
         pass  # print("Unable to set instance title")
+
+    # instantiate selected instancee here
+    selectedInstance = fr.imagingstudy.ImagingStudySeriesInstance(
+        **instance_data)
 
     series.instance.append(selectedInstance)
     study.numberOfInstances = study.numberOfInstances + 1
@@ -41,31 +67,39 @@ def _add_imaging_study_instance(study: fr.imagingstudy.ImagingStudy, series: fr.
     return
 
 
-def _add_imaging_study_series(study: fr.imagingstudy.ImagingStudy, ds: dataset.FileDataset, fp):
+def _add_imaging_study_series(study: ImagingStudyErlangen, ds: dataset.FileDataset, fp):
+
+    # inti data container
+    series_data = {}
+
     seriesInstanceUID = ds.SeriesInstanceUID
     # TODO: Add test for studyInstanceUID ... another check to make sure it matches
     selectedSeries = None
     if study.series is not None:
-        selectedSeries = next((s for s in study.series if s.uid == seriesInstanceUID), None)
+        selectedSeries = next(
+            (s for s in study.series if s.uid == seriesInstanceUID), None)
     else:
         study.series = []
 
     if selectedSeries is not None:
-        _add_imaging_study_instance(study, selectedSeries, ds, fp)
+        _add_imaging_study_instance(study, selectedSeries, ds)
         return
-    # Creating New Series
-    series = fr.imagingstudy.ImagingStudySeries()
-    series.uid = seriesInstanceUID
+
+    series_data["uid"] = seriesInstanceUID
     try:
-        series.description = ds.SeriesDescription
+        if ds.SeriesDescription != '':
+            series_data["description"] = ds.SeriesDescription
     except Exception:
         pass
 
-    series.number = ds.SeriesNumber
-    series.numberOfInstances = 0
+    series_data["number"] = ds.SeriesNumber
+    series_data["numberOfInstances"] = 0
 
-    series.modality = dicom2fhirutils.gen_modality_coding(ds.Modality)
-    dicom2fhirutils.update_study_modality_list(study, series.modality)
+    series_data["modality"] = dicom2fhirutils.gen_codeable_concept(
+        value_list=[ds.Modality],
+        system=dicom2fhirutils.ACQUISITION_MODALITY_SYS
+    )
+    dicom2fhirutils.update_study_modality_list(study, series_data["modality"])
 
     stime = None
     try:
@@ -75,17 +109,24 @@ def _add_imaging_study_series(study: fr.imagingstudy.ImagingStudy, ds: dataset.F
 
     try:
         sdate = ds.SeriesDate
-        series.started = dicom2fhirutils.gen_started_datetime(sdate, stime)
+        series_data["started"] = dicom2fhirutils.gen_started_datetime(
+            sdate, stime)
     except Exception:
         pass  # print("Series Date is missing")
 
     try:
-        series.bodySite = dicom2fhirutils.gen_coding_text_only(ds.BodyPartExamined)
+        series_data["bodySite"] = dicom2fhirutils.gen_bodysite_cr(
+            ds.BodyPartExamined)
+        dicom2fhirutils.update_study_bodysite_list(
+            study, series_data["bodySite"])
     except Exception:
         pass  # print ("Body Part Examined missing")
 
     try:
-        series.laterality = dicom2fhirutils.gen_coding_text_only(ds.Laterality)
+        series_data["laterality"] = dicom2fhirutils.gen_coding_text_only(
+            ds.Laterality)
+        dicom2fhirutils.update_study_laterality_list(
+            study, series_data["laterality"])
     except Exception:
         pass  # print ("Laterality missing")
 
@@ -93,24 +134,51 @@ def _add_imaging_study_series(study: fr.imagingstudy.ImagingStudy, ds: dataset.F
     # PerformingPhysicianName	0x81050
     # PerformingPhysicianIdentificationSequence	0x81052
 
+    # extension stuff here
+    if series_data["modality"].coding[0].code == "MR":
+        try:
+            series_data["scanningSequence"] = dicom2fhirutils.gen_coding(
+                value=ds[0x0018, 0x0020].value,
+                system=dicom2fhirutils.SCANNING_SEQUENCE_SYS
+            )
+        except Exception:
+            pass
+        try:
+            series_data["scanningVariant"] = dicom2fhirutils.gen_codeable_concept(
+                value_list=[ds[0x0018, 0x0021].value],
+                system=dicom2fhirutils.SCANNING_VARIANT_SYS
+            )
+        except Exception:
+            pass
+        try:
+            series_data["echoTime"] = ds[0x0018, 0x0081].value
+        except Exception:
+            pass
+
+    # Creating New Series
+    series = ImagingStudySeriesErlangen(**series_data)
+
     study.series.append(series)
     study.numberOfSeries = study.numberOfSeries + 1
-    _add_imaging_study_instance(study, series, ds, fp)
+    _add_imaging_study_instance(study, series, ds)
     return
 
 
-def _create_imaging_study(ds, fp, dcmDir) -> fr.imagingstudy.ImagingStudy:
-    study = fr.imagingstudy.ImagingStudy()
-    study.id = str(uuid.uuid4())
-    study.status = "available"
+def _create_imaging_study(ds, fp, dcmDir) -> ImagingStudyErlangen:
+    study_data = {}
+    study_data["id"] = str(uuid.uuid4())
+    study_data["status"] = "available"
     try:
-        study.description = ds.StudyDescription
+        if ds.StudyDescription != '':
+            study_data["description"] = ds.StudyDescription
     except Exception:
         pass  # missing study description
 
-    study.identifier = []
-    study.identifier.append(dicom2fhirutils.gen_accession_identifier(ds.AccessionNumber))
-    study.identifier.append(dicom2fhirutils.gen_studyinstanceuid_identifier(ds.StudyInstanceUID))
+    study_data["identifier"] = []
+    study_data["identifier"].append(
+        dicom2fhirutils.gen_accession_identifier(ds.AccessionNumber))
+    study_data["identifier"].append(
+        dicom2fhirutils.gen_studyinstanceuid_identifier(ds.StudyInstanceUID))
 
     ipid = None
     try:
@@ -118,18 +186,24 @@ def _create_imaging_study(ds, fp, dcmDir) -> fr.imagingstudy.ImagingStudy:
     except Exception:
         pass  # print("Issuer of Patient ID is missing")
 
-    study.contained = []
-    patientReference = fr.fhirreference.FHIRReference()
+    study_data["contained"] = []
+    patientReference = fhirtypes.ReferenceType()
     patientref = "patient.contained.inline"
     patientReference.reference = "#" + patientref
-    study.contained.append(dicom2fhirutils.inline_patient_resource(patientref, ds.PatientID, ipid, ds.PatientName,
-                                                                   ds.PatientSex, ds.PatientBirthDate))
-    study.subject = patientReference
-    study.endpoint = []
-    endpoint = fr.fhirreference.FHIRReference()
+    study_data["contained"].append(dicom2fhirutils.inline_patient_resource(
+        patientref,
+        ds.PatientID,
+        ipid,
+        ds.PatientName,
+        ds.PatientSex,
+        ds.PatientBirthDate
+    ))
+    study_data["subject"] = patientReference
+    study_data["endpoint"] = []
+    endpoint = fhirtypes.ReferenceType()
     endpoint.reference = "file://" + dcmDir
 
-    study.endpoint.append(endpoint)
+    study_data["endpoint"].append(endpoint)
 
     procedures = []
     try:
@@ -137,7 +211,8 @@ def _create_imaging_study(ds, fp, dcmDir) -> fr.imagingstudy.ImagingStudy:
     except Exception:
         pass  # procedure code sequence not found
 
-    study.procedureCode = dicom2fhirutils.gen_procedurecode_array(procedures)
+    study_data["procedure"] = dicom2fhirutils.gen_procedurecode_array(
+        procedures)
 
     studyTime = None
     try:
@@ -147,7 +222,8 @@ def _create_imaging_study(ds, fp, dcmDir) -> fr.imagingstudy.ImagingStudy:
 
     try:
         studyDate = ds.StudyDate
-        study.started = dicom2fhirutils.gen_started_datetime(studyDate, studyTime)
+        study_data["started"] = dicom2fhirutils.gen_started_datetime(
+            studyDate, studyTime)
     except Exception:
         pass  # print("Study Date is missing")
 
@@ -157,7 +233,8 @@ def _create_imaging_study(ds, fp, dcmDir) -> fr.imagingstudy.ImagingStudy:
     reason = None
     reasonStr = None
     try:
-        reason = dicom2fhirutils.dcm_coded_concept(ds.ReasonForRequestedProcedureCodeSequence)
+        reason = dicom2fhirutils.dcm_coded_concept(
+            ds.ReasonForRequestedProcedureCodeSequence)
     except Exception:
         pass  # print("Reason for Request procedure Code Seq is not available")
 
@@ -166,15 +243,19 @@ def _create_imaging_study(ds, fp, dcmDir) -> fr.imagingstudy.ImagingStudy:
     except Exception:
         pass  # print ("Reason for Requested procedures not found")
 
-    study.reasonCode = dicom2fhirutils.gen_reason(reason, reasonStr)
+    study_data["reason"] = dicom2fhirutils.gen_reason(reason, reasonStr)
 
-    study.numberOfSeries = 0
-    study.numberOfInstances = 0
+    study_data["numberOfSeries"] = 0
+    study_data["numberOfInstances"] = 0
+
+    # instantiate study here, when all required fields are available
+    study = ImagingStudyErlangen(**study_data)
+
     _add_imaging_study_series(study, ds, fp)
     return study
 
 
-def process_dicom_2_fhir(dcmDir: str) -> fr.imagingstudy.ImagingStudy:
+def process_dicom_2_fhir(dcmDir: str) -> ImagingStudyErlangen:
     files = []
     # TODO: subdirectory must be traversed
     for r, d, f in os.walk(dcmDir):
@@ -183,18 +264,19 @@ def process_dicom_2_fhir(dcmDir: str) -> fr.imagingstudy.ImagingStudy:
 
     studyInstanceUID = None
     imagingStudy = None
-    for fp in files:
+    for fp in tqdm(files):
         try:
             with dcmread(fp, None, [0x7FE00010], force=True) as ds:
                 if studyInstanceUID is None:
                     studyInstanceUID = ds.StudyInstanceUID
                 if studyInstanceUID != ds.StudyInstanceUID:
-                    raise Exception("Incorrect DCM path, more than one study detected")
-                    return None
+                    raise Exception(
+                        "Incorrect DCM path, more than one study detected")
                 if imagingStudy is None:
                     imagingStudy = _create_imaging_study(ds, fp, dcmDir)
                 else:
                     _add_imaging_study_series(imagingStudy, ds, fp)
-        except Exception:
+        except Exception as e:
+            logging.error(e)
             pass  # file is not a dicom file
     return imagingStudy
