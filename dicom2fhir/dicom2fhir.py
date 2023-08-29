@@ -7,7 +7,7 @@ from pydicom import dataset
 from tqdm import tqdm
 import logging
 
-from . import dicom2fhirutils
+from dicom2fhir import dicom2fhirutils
 
 import sys
 add_path = os.path.abspath(
