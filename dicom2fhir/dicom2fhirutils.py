@@ -9,6 +9,7 @@ from fhir.resources import patient
 from fhir.resources import humanname
 from fhir.resources import fhirtypes
 from fhir.resources import reference
+import pandas as pd
 
 TERMINOLOGY_CODING_SYS = "http://terminology.hl7.org/CodeSystem/v2-0203"
 TERMINOLOGY_CODING_SYS_CODE_ACCESSION = "ACSN"
@@ -19,6 +20,14 @@ SCANNING_SEQUENCE_SYS = "https://dicom.nema.org/medical/dicom/current/output/cht
 SCANNING_VARIANT_SYS = "https://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_C.8.3.html"
 
 SOP_CLASS_SYS = "urn:ietf:rfc:3986"
+
+def get_snomed(dicom_bodypart):
+
+    df = pd.read_csv("./mapping_dicom_snomed.csv")
+    index = int(df[df['Body Part Examined']==dicom_bodypart].index[0])
+    code_snomed = df.at[index, 'Code Value']
+
+    return int(code_snomed)
 
 
 def gen_accession_identifier(id):
@@ -197,10 +206,12 @@ def gen_codeable_concept(value_list: list, system):
 
 
 def gen_bodysite_cr(bd):
+
+    bd_snomed = get_snomed(bd)
     c = codeablereference.CodeableReference()
     c.concept = gen_codeable_concept(
-        value_list=[bd],
-        system="http://hl7.org/fhir/ValueSet/body-site"
+        value_list=[bd_snomed],
+        system="http://snomed.info/sct"
     )
     return c
 
@@ -269,3 +280,5 @@ def dcm_coded_concept(CodeSequence):
         concept["display"] = seq[0x0008, 0x0104].value
         concepts.append(concept)
     return concepts
+
+print(get_snomed('PANCREAS'))

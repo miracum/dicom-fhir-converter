@@ -6,6 +6,7 @@ from pydicom import dcmread
 from pydicom import dataset
 from tqdm import tqdm
 import logging
+import pandas as pd
 
 from dicom2fhir import dicom2fhirutils
 
@@ -16,10 +17,8 @@ add_path = os.path.abspath(
         "../../dicom-fhir-extension/"
     )
 )
-print(add_path)
 sys.path.append(add_path)
 from FeasibilityExtension import ImagingStudySeriesErlangen, ImagingStudyErlangen
-
 
 def _add_imaging_study_instance(
     study: ImagingStudyErlangen,
