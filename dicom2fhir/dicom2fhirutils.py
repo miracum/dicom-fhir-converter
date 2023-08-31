@@ -280,5 +280,3 @@ def dcm_coded_concept(CodeSequence):
         concept["display"] = seq[0x0008, 0x0104].value
         concepts.append(concept)
     return concepts
-
-print(get_snomed('PANCREAS'))
