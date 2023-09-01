@@ -27,11 +27,12 @@ def get_mapping_table(url):
     
     df[2].to_csv('mapping_dicom_snomed.csv', index=False)
 
-    return 
+    mapping = pd.read_csv("./mapping_dicom_snomed.csv")
 
-def get_snomed(dicom_bodypart):
+    return mapping
 
-    df = pd.read_csv("./mapping_dicom_snomed.csv")
+def get_snomed(dicom_bodypart, df):
+
     index = int(df[df['Body Part Examined']==dicom_bodypart].index[0])
     code_snomed = df.at[index, 'Code Value']
 
@@ -215,7 +216,7 @@ def gen_codeable_concept(value_list: list, system):
 
 def gen_bodysite_cr(bd):
 
-    bd_snomed = get_snomed(bd)
+    bd_snomed = get_snomed(bd, df=mapping_table)
     c = codeablereference.CodeableReference()
     c.concept = gen_codeable_concept(
         value_list=[bd_snomed],
@@ -288,8 +289,6 @@ def dcm_coded_concept(CodeSequence):
         concept["display"] = seq[0x0008, 0x0104].value
         concepts.append(concept)
     return concepts
-<<<<<<< HEAD
 
-get_mapping_table("https://dicom.nema.org/medical/dicom/current/output/chtml/part16/chapter_L.html#table_L-1")
-=======
->>>>>>> 86ebdaece4476e20778b30cb1695e40af6ca0909
+# get mapping table
+mapping_table = get_mapping_table("https://dicom.nema.org/medical/dicom/current/output/chtml/part16/chapter_L.html")
