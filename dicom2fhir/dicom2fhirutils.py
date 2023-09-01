@@ -21,6 +21,14 @@ SCANNING_VARIANT_SYS = "https://dicom.nema.org/medical/dicom/current/output/chtm
 
 SOP_CLASS_SYS = "urn:ietf:rfc:3986"
 
+def get_mapping_table(url):
+
+    df = pd.read_html(url)
+    
+    df[2].to_csv('mapping_dicom_snomed.csv', index=False)
+
+    return 
+
 def get_snomed(dicom_bodypart):
 
     df = pd.read_csv("./mapping_dicom_snomed.csv")
@@ -281,4 +289,4 @@ def dcm_coded_concept(CodeSequence):
         concepts.append(concept)
     return concepts
 
-print(get_snomed('PANCREAS'))
+get_mapping_table("https://dicom.nema.org/medical/dicom/current/output/chtml/part16/chapter_L.html#table_L-1")
