@@ -6,7 +6,6 @@ from pydicom import dcmread
 from pydicom import dataset
 from tqdm import tqdm
 import logging
-import pandas as pd
 
 from dicom2fhir import dicom2fhirutils
 
