@@ -288,5 +288,8 @@ def dcm_coded_concept(CodeSequence):
         concept["display"] = seq[0x0008, 0x0104].value
         concepts.append(concept)
     return concepts
+<<<<<<< HEAD
 
 get_mapping_table("https://dicom.nema.org/medical/dicom/current/output/chtml/part16/chapter_L.html#table_L-1")
+=======
+>>>>>>> 86ebdaece4476e20778b30cb1695e40af6ca0909
