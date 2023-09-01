@@ -2,3 +2,4 @@ fhir.resources>=7.0.2
 pydicom>=2.4.3
 setuptools
 lxml
+pandas
