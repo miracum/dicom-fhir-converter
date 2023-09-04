@@ -10,6 +10,8 @@ from fhir.resources import humanname
 from fhir.resources import fhirtypes
 from fhir.resources import reference
 import pandas as pd
+import os
+import logging
 
 TERMINOLOGY_CODING_SYS = "http://terminology.hl7.org/CodeSystem/v2-0203"
 TERMINOLOGY_CODING_SYS_CODE_ACCESSION = "ACSN"
@@ -21,22 +23,45 @@ SCANNING_VARIANT_SYS = "https://dicom.nema.org/medical/dicom/current/output/chtm
 
 SOP_CLASS_SYS = "urn:ietf:rfc:3986"
 
-def get_mapping_table(url):
+BODYSITE_SNOMED_MAPPING_URL = "https://dicom.nema.org/medical/dicom/current/output/chtml/part16/chapter_L.html"
 
-    df = pd.read_html(url)
-    
-    df[2].to_csv('mapping_dicom_snomed.csv', index=False)
 
-    mapping = pd.read_csv("./mapping_dicom_snomed.csv")
+def _get_snomed_bodysite_mapping(url, debug: bool = False):
+
+    logging.info(f"Get BodySite-SNOMED mapping from {url}")
+    df = pd.read_html(url, converters={
+        "Code Value": str
+    })
+
+    # required columns
+    req_cols = ["Code Value", "Code Meaning", "Body Part Examined"]
+
+    mapping = df[2][req_cols]
+
+    # remove empty values:
+    mapping = mapping[~mapping['Body Part Examined'].isnull()]
+
+    if debug:
+        fn_out = os.path.join(
+            os.curdir,
+            'mapping_dicom_snomed.csv'
+        )
+        mapping.to_csv(
+            path_or_buf=fn_out,
+            index=False
+        )
 
     return mapping
 
-def get_snomed(dicom_bodypart, df):
 
-    index = int(df[df['Body Part Examined']==dicom_bodypart].index[0])
-    code_snomed = df.at[index, 'Code Value']
+# get mapping table
+mapping_table = _get_snomed_bodysite_mapping(url=BODYSITE_SNOMED_MAPPING_URL)
 
-    return int(code_snomed)
+
+def _get_snomed(dicom_bodypart, sctmapping):
+    # codes are strings
+    return sctmapping.loc[sctmapping['Body Part Examined']
+                          == dicom_bodypart]["Code Value"].values[0]
 
 
 def gen_accession_identifier(id):
@@ -216,7 +241,7 @@ def gen_codeable_concept(value_list: list, system):
 
 def gen_bodysite_cr(bd):
 
-    bd_snomed = get_snomed(bd, df=mapping_table)
+    bd_snomed = _get_snomed(bd, sctmapping=mapping_table)
     c = codeablereference.CodeableReference()
     c.concept = gen_codeable_concept(
         value_list=[bd_snomed],
@@ -289,6 +314,3 @@ def dcm_coded_concept(CodeSequence):
         concept["display"] = seq[0x0008, 0x0104].value
         concepts.append(concept)
     return concepts
-
-# get mapping table
-mapping_table = get_mapping_table("https://dicom.nema.org/medical/dicom/current/output/chtml/part16/chapter_L.html")

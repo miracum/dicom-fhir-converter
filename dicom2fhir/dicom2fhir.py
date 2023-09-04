@@ -16,8 +16,11 @@ add_path = os.path.abspath(
         "../../dicom-fhir-extension/"
     )
 )
+logging.info(f"Add to $PATH: '{add_path}'")
 sys.path.append(add_path)
+# dicom-fhir-extension brings ImagingStudySeriesErlangen, ImagingStudyErlangen
 from FeasibilityExtension import ImagingStudySeriesErlangen, ImagingStudyErlangen
+
 
 def _add_imaging_study_instance(
     study: ImagingStudyErlangen,
