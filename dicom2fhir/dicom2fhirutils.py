@@ -9,6 +9,9 @@ from fhir.resources import patient
 from fhir.resources import humanname
 from fhir.resources import fhirtypes
 from fhir.resources import reference
+import pandas as pd
+import os
+import logging
 
 TERMINOLOGY_CODING_SYS = "http://terminology.hl7.org/CodeSystem/v2-0203"
 TERMINOLOGY_CODING_SYS_CODE_ACCESSION = "ACSN"
@@ -19,6 +22,46 @@ SCANNING_SEQUENCE_SYS = "https://dicom.nema.org/medical/dicom/current/output/cht
 SCANNING_VARIANT_SYS = "https://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_C.8.3.html"
 
 SOP_CLASS_SYS = "urn:ietf:rfc:3986"
+
+BODYSITE_SNOMED_MAPPING_URL = "https://dicom.nema.org/medical/dicom/current/output/chtml/part16/chapter_L.html"
+
+
+def _get_snomed_bodysite_mapping(url, debug: bool = False):
+
+    logging.info(f"Get BodySite-SNOMED mapping from {url}")
+    df = pd.read_html(url, converters={
+        "Code Value": str
+    })
+
+    # required columns
+    req_cols = ["Code Value", "Code Meaning", "Body Part Examined"]
+
+    mapping = df[2][req_cols]
+
+    # remove empty values:
+    mapping = mapping[~mapping['Body Part Examined'].isnull()]
+
+    if debug:
+        fn_out = os.path.join(
+            os.curdir,
+            'mapping_dicom_snomed.csv'
+        )
+        mapping.to_csv(
+            path_or_buf=fn_out,
+            index=False
+        )
+
+    return mapping
+
+
+# get mapping table
+mapping_table = _get_snomed_bodysite_mapping(url=BODYSITE_SNOMED_MAPPING_URL)
+
+
+def _get_snomed(dicom_bodypart, sctmapping):
+    # codes are strings
+    return sctmapping.loc[sctmapping['Body Part Examined']
+                          == dicom_bodypart]["Code Value"].values[0]
 
 
 def gen_accession_identifier(id):
@@ -197,10 +240,12 @@ def gen_codeable_concept(value_list: list, system):
 
 
 def gen_bodysite_cr(bd):
+
+    bd_snomed = _get_snomed(bd, sctmapping=mapping_table)
     c = codeablereference.CodeableReference()
     c.concept = gen_codeable_concept(
-        value_list=[bd],
-        system="http://hl7.org/fhir/ValueSet/body-site"
+        value_list=[bd_snomed],
+        system="http://snomed.info/sct"
     )
     return c
 
