@@ -267,7 +267,7 @@ def process_dicom_2_fhir(dcmDir: str) -> ImagingStudyErlangen:
     imagingStudy = None
     for fp in tqdm(files):
         try:
-            with dcmread(fp, None, [0x7FE00010], force=True) as ds:
+            with dcmread(fp, None, [0x7FE00010], force=True, stop_before_pixels=True) as ds:
                 if studyInstanceUID is None:
                     studyInstanceUID = ds.StudyInstanceUID
                 if studyInstanceUID != ds.StudyInstanceUID:
