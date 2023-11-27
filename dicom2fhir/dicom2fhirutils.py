@@ -276,8 +276,8 @@ def update_study_bodysite_list(study: imagingstudy.ImagingStudy, bodysite: codin
         return
 
     c = next((mc for mc in study.bodySite__ext if
-              mc[0].system == bodysite.system and
-              mc[0].code == bodysite.code), None)
+              mc.system == bodysite.system and
+              mc.code == bodysite.code), None)
     if c is not None:
         return
 
@@ -292,8 +292,8 @@ def update_study_laterality_list(study: imagingstudy.ImagingStudy, laterality: c
         return
 
     c = next((mc for mc in study.laterality__ext if
-              mc[0].system == laterality.system and
-              mc[0].code == laterality.code), None)
+              mc.system == laterality.system and
+              mc.code == laterality.code), None)
     if c is not None:
         return
 
