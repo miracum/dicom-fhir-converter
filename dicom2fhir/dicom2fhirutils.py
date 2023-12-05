@@ -1,14 +1,14 @@
 from datetime import datetime, date
 
-from fhir.resources import imagingstudy
-from fhir.resources import identifier
-from fhir.resources import codeableconcept
-from fhir.resources import codeablereference
-from fhir.resources import coding
-from fhir.resources import patient
-from fhir.resources import humanname
-from fhir.resources import fhirtypes
-from fhir.resources import reference
+from fhir.resources.R4B import imagingstudy
+from fhir.resources.R4B import identifier
+from fhir.resources.R4B import codeableconcept
+from fhir.resources.R4B import codeablereference
+from fhir.resources.R4B import coding
+from fhir.resources.R4B import patient
+from fhir.resources.R4B import humanname
+from fhir.resources.R4B import fhirtypes
+from fhir.resources.R4B import reference
 import pandas as pd
 import os
 import logging
@@ -195,7 +195,8 @@ def gen_started_datetime(dt, tm):
         dt_date.day,
         dt_date.hour,
         dt_date.minute,
-        dt_date.second
+        dt_date.second,
+        tzinfo="+01:00"
     )
 
     return fhirDtm
@@ -224,6 +225,9 @@ def gen_reason(reason, reasonStr):
 
 
 def gen_coding(value, system):
+    if isinstance(value, list):
+        raise Exception(
+        "More than one code for type Coding detected")
     c = coding.Coding()
     c.system = system
     c.code = value
@@ -239,12 +243,11 @@ def gen_codeable_concept(value_list: list, system):
     return c
 
 
-def gen_bodysite_cr(bd):
+def gen_bodysite_coding(bd):
 
     bd_snomed = _get_snomed(bd, sctmapping=mapping_table)
-    c = codeablereference.CodeableReference()
-    c.concept = gen_codeable_concept(
-        value_list=[bd_snomed],
+    c = gen_coding(
+        value=bd_snomed,
         system="http://snomed.info/sct"
     )
     return c
@@ -257,8 +260,8 @@ def update_study_modality_list(study: imagingstudy.ImagingStudy, modality: codin
         return
 
     c = next((mc for mc in study.modality if
-              mc.coding[0].system == modality.coding[0].system and
-              mc.coding[0].code == modality.coding[0].code), None)
+              mc.system == modality.system and
+              mc.code == modality.code), None)
     if c is not None:
         return
 
@@ -266,15 +269,15 @@ def update_study_modality_list(study: imagingstudy.ImagingStudy, modality: codin
     return
 
 
-def update_study_bodysite_list(study: imagingstudy.ImagingStudy, bodysite: codeablereference.CodeableReference):
+def update_study_bodysite_list(study: imagingstudy.ImagingStudy, bodysite: coding.Coding):
     if study.bodySite__ext is None or len(study.bodySite__ext) <= 0:
         study.bodySite__ext = []
         study.bodySite__ext.append(bodysite)
         return
 
     c = next((mc for mc in study.bodySite__ext if
-              mc.conecpt.coding[0].system == bodysite.conecpt.coding[0].system and
-              mc.conecpt.coding[0].code == bodysite.conecpt.coding[0].code), None)
+              mc.system == bodysite.system and
+              mc.code == bodysite.code), None)
     if c is not None:
         return
 
@@ -282,15 +285,15 @@ def update_study_bodysite_list(study: imagingstudy.ImagingStudy, bodysite: codea
     return
 
 
-def update_study_laterality_list(study: imagingstudy.ImagingStudy, laterality: codeableconcept.CodeableConcept):
+def update_study_laterality_list(study: imagingstudy.ImagingStudy, laterality: coding.Coding):
     if study.laterality__ext is None or len(study.laterality__ext) <= 0:
         study.laterality__ext = []
         study.laterality__ext.append(laterality)
         return
 
     c = next((mc for mc in study.laterality__ext if
-              mc.coding[0].system == laterality.coding[0].system and
-              mc.coding[0].code == laterality.coding[0].code), None)
+              mc.system == laterality.system and
+              mc.code == laterality.code), None)
     if c is not None:
         return
 
