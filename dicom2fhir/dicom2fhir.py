@@ -1,7 +1,7 @@
 import uuid
 import os
-from fhir import resources as fr
-from fhir.resources import fhirtypes
+from fhir.resources import R4B as fr
+from fhir.resources.R4B import reference
 from pydicom import dcmread
 from pydicom import dataset
 from tqdm import tqdm
@@ -16,8 +16,9 @@ add_path = os.path.abspath(
         "../../dicom-fhir-extension/"
     )
 )
-print(add_path)
+logging.info(f"Add to $PATH: '{add_path}'")
 sys.path.append(add_path)
+# dicom-fhir-extension brings ImagingStudySeriesErlangen, ImagingStudyErlangen
 from FeasibilityExtension import ImagingStudySeriesErlangen, ImagingStudyErlangen
 
 
@@ -49,7 +50,7 @@ def _add_imaging_study_instance(
     instance_data["number"] = ds.InstanceNumber
 
     try:
-        if series.modality.coding[0].code == "SR":
+        if series.modality.code == "SR":
             seq = ds.ConceptNameCodeSequence
             instance_data["title"] = seq[0x0008, 0x0104]
         else:
@@ -95,8 +96,8 @@ def _add_imaging_study_series(study: ImagingStudyErlangen, ds: dataset.FileDatas
     series_data["number"] = ds.SeriesNumber
     series_data["numberOfInstances"] = 0
 
-    series_data["modality"] = dicom2fhirutils.gen_codeable_concept(
-        value_list=[ds.Modality],
+    series_data["modality"] = dicom2fhirutils.gen_coding(
+        value=ds.Modality,
         system=dicom2fhirutils.ACQUISITION_MODALITY_SYS
     )
     dicom2fhirutils.update_study_modality_list(study, series_data["modality"])
@@ -115,7 +116,7 @@ def _add_imaging_study_series(study: ImagingStudyErlangen, ds: dataset.FileDatas
         pass  # print("Series Date is missing")
 
     try:
-        series_data["bodySite"] = dicom2fhirutils.gen_bodysite_cr(
+        series_data["bodySite"] = dicom2fhirutils.gen_bodysite_coding(
             ds.BodyPartExamined)
         dicom2fhirutils.update_study_bodysite_list(
             study, series_data["bodySite"])
@@ -135,7 +136,7 @@ def _add_imaging_study_series(study: ImagingStudyErlangen, ds: dataset.FileDatas
     # PerformingPhysicianIdentificationSequence	0x81052
 
     # extension stuff here
-    if series_data["modality"].coding[0].code == "MR":
+    if series_data["modality"].code == "MR":
         try:
             series_data["scanningSequence"] = dicom2fhirutils.gen_coding(
                 value=ds[0x0018, 0x0020].value,
@@ -186,21 +187,11 @@ def _create_imaging_study(ds, fp, dcmDir) -> ImagingStudyErlangen:
     except Exception:
         pass  # print("Issuer of Patient ID is missing")
 
-    study_data["contained"] = []
-    patientReference = fhirtypes.ReferenceType()
-    patientref = "patient.contained.inline"
-    patientReference.reference = "#" + patientref
-    study_data["contained"].append(dicom2fhirutils.inline_patient_resource(
-        patientref,
-        ds.PatientID,
-        ipid,
-        ds.PatientName,
-        ds.PatientSex,
-        ds.PatientBirthDate
-    ))
+    patientReference = reference.Reference()
+    patientReference.reference = ds.PatientID
     study_data["subject"] = patientReference
     study_data["endpoint"] = []
-    endpoint = fhirtypes.ReferenceType()
+    endpoint = reference.Reference()
     endpoint.reference = "file://" + dcmDir
 
     study_data["endpoint"].append(endpoint)
@@ -211,7 +202,7 @@ def _create_imaging_study(ds, fp, dcmDir) -> ImagingStudyErlangen:
     except Exception:
         pass  # procedure code sequence not found
 
-    study_data["procedure"] = dicom2fhirutils.gen_procedurecode_array(
+    study_data["procedureCode"] = dicom2fhirutils.gen_procedurecode_array(
         procedures)
 
     studyTime = None
@@ -243,7 +234,7 @@ def _create_imaging_study(ds, fp, dcmDir) -> ImagingStudyErlangen:
     except Exception:
         pass  # print ("Reason for Requested procedures not found")
 
-    study_data["reason"] = dicom2fhirutils.gen_reason(reason, reasonStr)
+    study_data["reasonCode"] = dicom2fhirutils.gen_reason(reason, reasonStr)
 
     study_data["numberOfSeries"] = 0
     study_data["numberOfInstances"] = 0
@@ -279,4 +270,4 @@ def process_dicom_2_fhir(dcmDir: str) -> ImagingStudyErlangen:
         except Exception as e:
             logging.error(e)
             pass  # file is not a dicom file
-    return imagingStudy
+    return imagingStudy, studyInstanceUID
