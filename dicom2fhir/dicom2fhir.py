@@ -2,6 +2,7 @@ import uuid
 import os
 from fhir.resources import R4B as fr
 from fhir.resources.R4B import reference
+from fhir.resources.R4B import imagingstudy
 from pydicom import dcmread
 from pydicom import dataset
 from tqdm import tqdm
@@ -9,22 +10,9 @@ import logging
 
 from dicom2fhir import dicom2fhirutils
 
-import sys
-add_path = os.path.abspath(
-    os.path.join(
-        os.path.dirname(os.path.realpath(__file__)),
-        "../../dicom-fhir-extension/"
-    )
-)
-logging.info(f"Add to $PATH: '{add_path}'")
-sys.path.append(add_path)
-# dicom-fhir-extension brings ImagingStudySeriesErlangen, ImagingStudyErlangen
-from FeasibilityExtension import ImagingStudySeriesErlangen, ImagingStudyErlangen
-
-
 def _add_imaging_study_instance(
-    study: ImagingStudyErlangen,
-    series: ImagingStudySeriesErlangen,
+    study: imagingstudy.ImagingStudy,
+    series: imagingstudy.ImagingStudySeries,
     ds: dataset.FileDataset
 ):
     selectedInstance = None
@@ -68,7 +56,7 @@ def _add_imaging_study_instance(
     return
 
 
-def _add_imaging_study_series(study: ImagingStudyErlangen, ds: dataset.FileDataset, fp):
+def _add_imaging_study_series(study: imagingstudy.ImagingStudy, ds: dataset.FileDataset, fp, study_lists):
 
     # inti data container
     series_data = {}
@@ -100,7 +88,7 @@ def _add_imaging_study_series(study: ImagingStudyErlangen, ds: dataset.FileDatas
         value=ds.Modality,
         system=dicom2fhirutils.ACQUISITION_MODALITY_SYS
     )
-    dicom2fhirutils.update_study_modality_list(study, series_data["modality"])
+    #dicom2fhirutils.update_study_modality_list(study_lists, ds.Modality)
 
     stime = None
     try:
@@ -118,16 +106,16 @@ def _add_imaging_study_series(study: ImagingStudyErlangen, ds: dataset.FileDatas
     try:
         series_data["bodySite"] = dicom2fhirutils.gen_bodysite_coding(
             ds.BodyPartExamined)
-        dicom2fhirutils.update_study_bodysite_list(
-            study, series_data["bodySite"])
+        # dicom2fhirutils.update_study_bodysite_list(
+        #     study, series_data["bodySite"])
     except Exception:
         pass  # print ("Body Part Examined missing")
 
     try:
         series_data["laterality"] = dicom2fhirutils.gen_coding_text_only(
             ds.Laterality)
-        dicom2fhirutils.update_study_laterality_list(
-            study, series_data["laterality"])
+        # dicom2fhirutils.update_study_laterality_list(
+        #     study, series_data["laterality"])
     except Exception:
         pass  # print ("Laterality missing")
 
@@ -138,26 +126,28 @@ def _add_imaging_study_series(study: ImagingStudyErlangen, ds: dataset.FileDatas
     # extension stuff here
     if series_data["modality"].code == "MR":
         try:
-            series_data["scanningSequence"] = dicom2fhirutils.gen_coding(
+            series_data["scanningSequence"] = dicom2fhirutils.gen_extension(
+                url="test.url.de",
                 value=ds[0x0018, 0x0020].value,
-                system=dicom2fhirutils.SCANNING_SEQUENCE_SYS
+                system=dicom2fhirutils.SCANNING_SEQUENCE_SYS,
+                type="Coding"
             )
         except Exception:
             pass
-        try:
-            series_data["scanningVariant"] = dicom2fhirutils.gen_codeable_concept(
-                value_list=[ds[0x0018, 0x0021].value],
-                system=dicom2fhirutils.SCANNING_VARIANT_SYS
-            )
-        except Exception:
-            pass
-        try:
-            series_data["echoTime"] = ds[0x0018, 0x0081].value
-        except Exception:
-            pass
+        # try:
+        #     series_data["scanningVariant"] = dicom2fhirutils.gen_codeable_concept(
+        #         value_list=[ds[0x0018, 0x0021].value],
+        #         system=dicom2fhirutils.SCANNING_VARIANT_SYS
+        #     )
+        # except Exception:
+        #     pass
+        # try:
+        #     series_data["echoTime"] = ds[0x0018, 0x0081].value
+        # except Exception:
+        #     pass
 
     # Creating New Series
-    series = ImagingStudySeriesErlangen(**series_data)
+    series = imagingstudy.ImagingStudySeries(**series_data)
 
     study.series.append(series)
     study.numberOfSeries = study.numberOfSeries + 1
@@ -165,7 +155,7 @@ def _add_imaging_study_series(study: ImagingStudyErlangen, ds: dataset.FileDatas
     return
 
 
-def _create_imaging_study(ds, fp, dcmDir) -> ImagingStudyErlangen:
+def _create_imaging_study(ds, fp, dcmDir) -> imagingstudy.ImagingStudy:
     study_data = {}
     study_data["id"] = str(uuid.uuid4())
     study_data["status"] = "available"
@@ -240,13 +230,14 @@ def _create_imaging_study(ds, fp, dcmDir) -> ImagingStudyErlangen:
     study_data["numberOfInstances"] = 0
 
     # instantiate study here, when all required fields are available
-    study = ImagingStudyErlangen(**study_data)
+    study = imagingstudy.ImagingStudy(**study_data)
+    study_lists = []
 
-    _add_imaging_study_series(study, ds, fp)
-    return study
+    _add_imaging_study_series(study, ds, fp, study_lists)
+    return study, study_lists
 
 
-def process_dicom_2_fhir(dcmDir: str) -> ImagingStudyErlangen:
+def process_dicom_2_fhir(dcmDir: str) -> imagingstudy.ImagingStudy:
     files = []
     # TODO: subdirectory must be traversed
     for r, d, f in os.walk(dcmDir):
@@ -264,9 +255,9 @@ def process_dicom_2_fhir(dcmDir: str) -> ImagingStudyErlangen:
                     raise Exception(
                         "Incorrect DCM path, more than one study detected")
                 if imagingStudy is None:
-                    imagingStudy = _create_imaging_study(ds, fp, dcmDir)
+                    imagingStudy, study_lists = _create_imaging_study(ds, fp, dcmDir)
                 else:
-                    _add_imaging_study_series(imagingStudy, ds, fp)
+                    _add_imaging_study_series(imagingStudy, ds, fp, study_lists)
         except Exception as e:
             logging.error(e)
             pass  # file is not a dicom file
