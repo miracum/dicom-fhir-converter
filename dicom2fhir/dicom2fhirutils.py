@@ -296,8 +296,8 @@ def gen_bodysite_coding(bd):
 #     if c is not None:
 #         return
 
-    study.laterality__ext.append(laterality)
-    return
+    # study.laterality__ext.append(laterality)
+    # return
 
 
 def gen_coding_text_only(text):
