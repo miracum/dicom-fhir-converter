@@ -1,14 +1,14 @@
-from datetime import datetime, date
+from datetime import datetime
 
 from fhir.resources.R4B import imagingstudy
 from fhir.resources.R4B import identifier
 from fhir.resources.R4B import codeableconcept
-from fhir.resources.R4B import codeablereference
 from fhir.resources.R4B import coding
 from fhir.resources.R4B import patient
 from fhir.resources.R4B import humanname
 from fhir.resources.R4B import fhirtypes
 from fhir.resources.R4B import reference
+from fhir.resources.R4B import extension
 import pandas as pd
 import os
 import logging
@@ -253,49 +253,48 @@ def gen_bodysite_coding(bd):
     return c
 
 
-def update_study_modality_list(study: imagingstudy.ImagingStudy, modality: coding.Coding):
-    if study.modality is None or len(study.modality) <= 0:
-        study.modality = []
-        study.modality.append(modality)
-        return
+# def update_study_modality_list(study_list_modality: list, modality: str):
+#     if study_list_modality is None or len(study_list_modality) <= 0:
+#         study_list_modality = []
+#         study_list_modality.append(modality)
+#         return
 
-    c = next((mc for mc in study.modality if
-              mc.system == modality.system and
-              mc.code == modality.code), None)
-    if c is not None:
-        return
+#     c = next((mc for mc in study_list_modality if
+#               mc == modality), None)
+#     if c is not None:
+#         return
 
-    study.modality.append(modality)
-    return
-
-
-def update_study_bodysite_list(study: imagingstudy.ImagingStudy, bodysite: coding.Coding):
-    if study.bodySite__ext is None or len(study.bodySite__ext) <= 0:
-        study.bodySite__ext = []
-        study.bodySite__ext.append(bodysite)
-        return
-
-    c = next((mc for mc in study.bodySite__ext if
-              mc.system == bodysite.system and
-              mc.code == bodysite.code), None)
-    if c is not None:
-        return
-
-    study.bodySite__ext.append(bodysite)
-    return
+#     study_list_modality.append(modality)
+#     return
 
 
-def update_study_laterality_list(study: imagingstudy.ImagingStudy, laterality: coding.Coding):
-    if study.laterality__ext is None or len(study.laterality__ext) <= 0:
-        study.laterality__ext = []
-        study.laterality__ext.append(laterality)
-        return
+# def update_study_bodysite_list(study: imagingstudy.ImagingStudy, bodysite: coding.Coding):
+#     if study.bodySite__ext is None or len(study.bodySite__ext) <= 0:
+#         study.bodySite__ext = []
+#         study.bodySite__ext.append(bodysite)
+#         return
 
-    c = next((mc for mc in study.laterality__ext if
-              mc.system == laterality.system and
-              mc.code == laterality.code), None)
-    if c is not None:
-        return
+#     c = next((mc for mc in study.bodySite__ext if
+#               mc.system == bodysite.system and
+#               mc.code == bodysite.code), None)
+#     if c is not None:
+#         return
+
+#     study.bodySite__ext.append(bodysite)
+#     return
+
+
+# def update_study_laterality_list(study: imagingstudy.ImagingStudy, laterality: coding.Coding):
+#     if study.laterality__ext is None or len(study.laterality__ext) <= 0:
+#         study.laterality__ext = []
+#         study.laterality__ext.append(laterality)
+#         return
+
+#     c = next((mc for mc in study.laterality__ext if
+#               mc.system == laterality.system and
+#               mc.code == laterality.code), None)
+#     if c is not None:
+#         return
 
     study.laterality__ext.append(laterality)
     return

@@ -3,10 +3,12 @@ import os
 from fhir.resources import R4B as fr
 from fhir.resources.R4B import reference
 from fhir.resources.R4B import imagingstudy
+from fhir.resources.R4B import identifier
 from pydicom import dcmread
 from pydicom import dataset
 from tqdm import tqdm
 import logging
+import hashlib
 
 from dicom2fhir import dicom2fhirutils
 
@@ -124,16 +126,16 @@ def _add_imaging_study_series(study: imagingstudy.ImagingStudy, ds: dataset.File
     # PerformingPhysicianIdentificationSequence	0x81052
 
     # extension stuff here
-    if series_data["modality"].code == "MR":
-        try:
-            series_data["scanningSequence"] = dicom2fhirutils.gen_extension(
-                url="test.url.de",
-                value=ds[0x0018, 0x0020].value,
-                system=dicom2fhirutils.SCANNING_SEQUENCE_SYS,
-                type="Coding"
-            )
-        except Exception:
-            pass
+    # if series_data["modality"].code == "MR":
+    #     try:
+    #         series_data["scanningSequence"] = dicom2fhirutils.gen_extension(
+    #             url="test.url.de",
+    #             value=ds[0x0018, 0x0020].value,
+    #             system=dicom2fhirutils.SCANNING_SEQUENCE_SYS,
+    #             type="Coding"
+    #         )
+    #     except Exception:
+    #         pass
         # try:
         #     series_data["scanningVariant"] = dicom2fhirutils.gen_codeable_concept(
         #         value_list=[ds[0x0018, 0x0021].value],
@@ -176,15 +178,24 @@ def _create_imaging_study(ds, fp, dcmDir) -> imagingstudy.ImagingStudy:
         ipid = ds.IssuerOfPatientID
     except Exception:
         pass  # print("Issuer of Patient ID is missing")
+    
+    patID9 = str(ds.PatientID)[:9]
+    patIdentifier = "https://fhir.diz.uk-erlangen.de/identifiers/patient-id|"+patID9
+    hashedIdentifier = hashlib.sha256(patIdentifier.encode('utf-8')).hexdigest()
+    patientReference = "Patient/"+hashedIdentifier
+    patientRef = reference.Reference()
+    patientRef.reference = patientReference
+    patIdent = identifier.Identifier()
+    patIdent.system = "https://fhir.diz.uk-erlangen.de/identifiers/patient-id"
+    patIdent.type = dicom2fhirutils.gen_codeable_concept(["MR"],"http://terminology.hl7.org/CodeSystem/v2-0203")
+    patIdent.value = patID9
+    patientRef.identifier = patIdent
+    study_data["subject"] = patientRef
+    # study_data["endpoint"] = []
+    # endpoint = reference.Reference()
+    # endpoint.reference = "file://" + dcmDir
 
-    patientReference = reference.Reference()
-    patientReference.reference = ds.PatientID
-    study_data["subject"] = patientReference
-    study_data["endpoint"] = []
-    endpoint = reference.Reference()
-    endpoint.reference = "file://" + dcmDir
-
-    study_data["endpoint"].append(endpoint)
+    # study_data["endpoint"].append(endpoint)
 
     procedures = []
     try:
