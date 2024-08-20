@@ -4,7 +4,6 @@ from fhir.resources import R4B as fr
 from fhir.resources.R4B import reference
 from fhir.resources.R4B import imagingstudy
 from fhir.resources.R4B import identifier
-from fhir.resources.R4B import extension
 from pydicom import dcmread
 from pydicom import dataset
 from tqdm import tqdm
@@ -21,9 +20,8 @@ from dicom2fhir import extension_contrast
 from dicom2fhir import extension_instance
 from dicom2fhir import extension_reason
 
-global study_list_modality
-
-study_list_modality = []
+# global list for all distinct series modalities
+study_list_modality_global = []
 
 def _add_imaging_study_instance(
     study: imagingstudy.ImagingStudy,
@@ -82,8 +80,8 @@ def _add_imaging_study_instance(
     return
 
 
-def _add_imaging_study_series(study: imagingstudy.ImagingStudy, ds: dataset.FileDataset, fp, study_list_modality):
-
+def _add_imaging_study_series(study: imagingstudy.ImagingStudy, ds: dataset.FileDataset, fp):
+    
     # inti data container
     series_data = {}
 
@@ -115,7 +113,8 @@ def _add_imaging_study_series(study: imagingstudy.ImagingStudy, ds: dataset.File
         system=dicom2fhirutils.ACQUISITION_MODALITY_SYS
     )
 
-    study_list_modality = dicom2fhirutils.update_study_modality_list(study_list_modality, ds.Modality)
+    global study_list_modality_global
+    study_list_modality_global = dicom2fhirutils.update_study_modality_list(study_list_modality_global, ds.Modality)
 
     stime = None
     try:
@@ -189,8 +188,8 @@ def _add_imaging_study_series(study: imagingstudy.ImagingStudy, ds: dataset.File
     _add_imaging_study_instance(study, series, ds)
     return
 
-
 def _create_imaging_study(ds, fp, dcmDir) -> imagingstudy.ImagingStudy:
+    study_list_modality_temp = []
     study_data = {}
     study_data["id"] = str(uuid.uuid4())
     study_data["status"] = "available" #dicom2fhirutils.gen_coding("available", "http://hl7.org/fhir/ValueSet/imagingstudy-status")
@@ -265,6 +264,8 @@ def _create_imaging_study(ds, fp, dcmDir) -> imagingstudy.ImagingStudy:
     study_data["numberOfSeries"] = 0
     study_data["numberOfInstances"] = 0
 
+    study_data["modality"] = []
+
     study_extensions = []
     
     #reason extension
@@ -276,12 +277,14 @@ def _create_imaging_study(ds, fp, dcmDir) -> imagingstudy.ImagingStudy:
     # instantiate study here, when all required fields are available
     study = imagingstudy.ImagingStudy(**study_data)
 
-    _add_imaging_study_series(study, ds, fp, study_list_modality)
+    _add_imaging_study_series(study, ds, fp)
 
     return study
 
 
 def process_dicom_2_fhir(dcmDir: str) -> imagingstudy.ImagingStudy:
+
+    global study_list_modality_global
     files = []
     # TODO: subdirectory must be traversed
     for r, d, f in os.walk(dcmDir):
@@ -301,11 +304,21 @@ def process_dicom_2_fhir(dcmDir: str) -> imagingstudy.ImagingStudy:
                 if imagingStudy is None:
                     imagingStudy = _create_imaging_study(ds, fp, dcmDir)
                 else:
-                    _add_imaging_study_series(imagingStudy, ds, fp, study_list_modality)
-
-                #imagingStudy["modality"] = study_list_modality
-
+                    _add_imaging_study_series(imagingStudy, ds, fp)
         except Exception as e:
             logging.error(e)
             pass  # file is not a dicom file
+
+    # add modality list to study level
+    try: 
+        mod_codings = []
+        for mod in study_list_modality_global:
+            c = dicom2fhirutils.gen_coding(
+            value=mod,
+            system=dicom2fhirutils.ACQUISITION_MODALITY_SYS)
+            mod_codings.append(c)
+        imagingStudy.modality = mod_codings
+    except Exception as e:
+            pass
+
     return imagingStudy, studyInstanceUID

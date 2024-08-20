@@ -236,11 +236,11 @@ def gen_coding(value, system, display=None):
     return c
 
 
-def gen_codeable_concept(value_list: list, system):
+def gen_codeable_concept(value_list: list, system, display=None):
     c = codeableconcept.CodeableConcept()
     c.coding = []
     for _l in value_list:
-        m = gen_coding(_l, system)
+        m = gen_coding(_l, system, display)
         c.coding.append(m)
     return c
 
@@ -260,12 +260,12 @@ def update_study_modality_list(study_list_modality: list, modality: str):
     if study_list_modality is None or len(study_list_modality) <= 0:
         study_list_modality = []
         study_list_modality.append(modality)
-        return
+        return study_list_modality
 
     c = next((mc for mc in study_list_modality if
               mc == modality), None)
     if c is not None:
-        return
+        return study_list_modality
 
     study_list_modality.append(modality)
     return study_list_modality
@@ -283,7 +283,7 @@ def gen_extension(url):
     
     return e
 
-def add_extension_value(e, url, value, system, unit, type):
+def add_extension_value(e, url, value, system, unit, type, display=None):
 
     if type == "string":
         e.valueString = value
@@ -311,7 +311,7 @@ def add_extension_value(e, url, value, system, unit, type):
 
     if type == "codeableconcept":
         e.url = url
-        c = gen_codeable_concept([value], system)
+        c = gen_codeable_concept([value], system, display)
         e.valueCodeableConcept = c
         
     return e

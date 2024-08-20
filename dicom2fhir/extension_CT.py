@@ -64,7 +64,7 @@ def gen_extension(ds):
             url = "exposureTime",
             value=ds[0x0018, 0x1150].value,
             system= "http://unitsofmeasure.org",
-            unit= "kilovolt",
+            unit= "milliseconds",
             type="quantity"
         )
         ex_list.append(extension_exposureTime)
