@@ -9,6 +9,7 @@ from fhir.resources.R4B import humanname
 from fhir.resources.R4B import fhirtypes
 from fhir.resources.R4B import reference
 from fhir.resources.R4B import extension
+from fhir.resources.R4B.quantity import Quantity
 import pandas as pd
 import os
 import logging
@@ -60,8 +61,8 @@ mapping_table = _get_snomed_bodysite_mapping(url=BODYSITE_SNOMED_MAPPING_URL)
 
 def _get_snomed(dicom_bodypart, sctmapping):
     # codes are strings
-    return sctmapping.loc[sctmapping['Body Part Examined']
-                          == dicom_bodypart]["Code Value"].values[0]
+    return (sctmapping.loc[sctmapping['Body Part Examined'] == dicom_bodypart]["Code Value"].values[0],
+            sctmapping.loc[sctmapping['Body Part Examined'] == dicom_bodypart]["Code Meaning"].values[0])
 
 
 def gen_accession_identifier(id):
@@ -224,13 +225,14 @@ def gen_reason(reason, reasonStr):
     return reasonList
 
 
-def gen_coding(value, system):
+def gen_coding(value, system, display=None):
     if isinstance(value, list):
         raise Exception(
         "More than one code for type Coding detected")
     c = coding.Coding()
     c.system = system
     c.code = value
+    c.display = display
     return c
 
 
@@ -245,59 +247,28 @@ def gen_codeable_concept(value_list: list, system):
 
 def gen_bodysite_coding(bd):
 
-    bd_snomed = _get_snomed(bd, sctmapping=mapping_table)
+    bd_snomed, meaning = _get_snomed(bd, sctmapping=mapping_table)
     c = gen_coding(
         value=bd_snomed,
-        system="http://snomed.info/sct"
+        system="http://snomed.info/sct",
+        display = meaning
     )
     return c
 
 
-# def update_study_modality_list(study_list_modality: list, modality: str):
-#     if study_list_modality is None or len(study_list_modality) <= 0:
-#         study_list_modality = []
-#         study_list_modality.append(modality)
-#         return
+def update_study_modality_list(study_list_modality: list, modality: str):
+    if study_list_modality is None or len(study_list_modality) <= 0:
+        study_list_modality = []
+        study_list_modality.append(modality)
+        return
 
-#     c = next((mc for mc in study_list_modality if
-#               mc == modality), None)
-#     if c is not None:
-#         return
+    c = next((mc for mc in study_list_modality if
+              mc == modality), None)
+    if c is not None:
+        return
 
-#     study_list_modality.append(modality)
-#     return
-
-
-# def update_study_bodysite_list(study: imagingstudy.ImagingStudy, bodysite: coding.Coding):
-#     if study.bodySite__ext is None or len(study.bodySite__ext) <= 0:
-#         study.bodySite__ext = []
-#         study.bodySite__ext.append(bodysite)
-#         return
-
-#     c = next((mc for mc in study.bodySite__ext if
-#               mc.system == bodysite.system and
-#               mc.code == bodysite.code), None)
-#     if c is not None:
-#         return
-
-#     study.bodySite__ext.append(bodysite)
-#     return
-
-
-# def update_study_laterality_list(study: imagingstudy.ImagingStudy, laterality: coding.Coding):
-#     if study.laterality__ext is None or len(study.laterality__ext) <= 0:
-#         study.laterality__ext = []
-#         study.laterality__ext.append(laterality)
-#         return
-
-#     c = next((mc for mc in study.laterality__ext if
-#               mc.system == laterality.system and
-#               mc.code == laterality.code), None)
-#     if c is not None:
-#         return
-
-    # study.laterality__ext.append(laterality)
-    # return
+    study_list_modality.append(modality)
+    return study_list_modality
 
 
 def gen_coding_text_only(text):
@@ -306,6 +277,44 @@ def gen_coding_text_only(text):
     c.userSelected = True
     return c
 
+def gen_extension(url):
+    e = extension.Extension()
+    e.url = url
+    
+    return e
+
+def add_extension_value(e, url, value, system, unit, type):
+
+    if type == "string":
+        e.valueString = value
+        e.url = url
+
+    if type == "quantity":
+        e.url = url
+        value_quantity = Quantity()
+        value_quantity.value = value
+        value_quantity.unit = unit
+        value_quantity.system = system
+        e.valueQuantity = value_quantity
+
+    if type == "boolean":
+        e.url = url
+        e.valueBoolean = value
+
+    if type == "reference":
+        e.url = url
+        e.valueReference = value
+    
+    if type == "datetime":
+        e.url = url
+        e.valueDateTime = value
+
+    if type == "codeableconcept":
+        e.url = url
+        c = gen_codeable_concept([value], system)
+        e.valueCodeableConcept = c
+        
+    return e
 
 def dcm_coded_concept(CodeSequence):
     concepts = []
