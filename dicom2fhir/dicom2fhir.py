@@ -192,7 +192,7 @@ def _create_imaging_study(ds, fp, dcmDir) -> imagingstudy.ImagingStudy:
     study_list_modality_temp = []
     study_data = {}
     study_data["id"] = str(uuid.uuid4())
-    study_data["status"] = "available" #dicom2fhirutils.gen_coding("available", "http://hl7.org/fhir/ValueSet/imagingstudy-status")
+    study_data["status"] = "available"
     
     try:
         if ds.StudyDescription != '':
@@ -279,7 +279,7 @@ def _create_imaging_study(ds, fp, dcmDir) -> imagingstudy.ImagingStudy:
 
     _add_imaging_study_series(study, ds, fp)
 
-    return study
+    return study, ds.AccessionNumber
 
 
 def process_dicom_2_fhir(dcmDir: str) -> imagingstudy.ImagingStudy:
@@ -302,7 +302,7 @@ def process_dicom_2_fhir(dcmDir: str) -> imagingstudy.ImagingStudy:
                     raise Exception(
                         "Incorrect DCM path, more than one study detected")
                 if imagingStudy is None:
-                    imagingStudy = _create_imaging_study(ds, fp, dcmDir)
+                    imagingStudy, accession_number = _create_imaging_study(ds, fp, dcmDir)
                 else:
                     _add_imaging_study_series(imagingStudy, ds, fp)
         except Exception as e:
@@ -321,4 +321,4 @@ def process_dicom_2_fhir(dcmDir: str) -> imagingstudy.ImagingStudy:
     except Exception as e:
             pass
 
-    return imagingStudy, studyInstanceUID
+    return imagingStudy, studyInstanceUID, accession_number
