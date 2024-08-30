@@ -20,8 +20,11 @@ from dicom2fhir import extension_contrast
 from dicom2fhir import extension_instance
 from dicom2fhir import extension_reason
 
+include_instances = True
+
 # global list for all distinct series modalities
 study_list_modality_global = []
+
 
 def _add_imaging_study_instance(
     study: imagingstudy.ImagingStudy,
@@ -60,28 +63,28 @@ def _add_imaging_study_instance(
         pass  # print("Unable to set instance title")
 
     ########### extension stuff here ##########
-    
+
     instance_extensions = []
 
-    #instance extension
+    # instance extension
     e_instance = extension_instance.gen_extension(ds)
     instance_extensions.append(e_instance)
-    
-    instance_data["extension"] = instance_extensions
 
+    instance_data["extension"] = instance_extensions
 
     # instantiate selected instance here
     selectedInstance = fr.imagingstudy.ImagingStudySeriesInstance(
         **instance_data)
 
-    series.instance.append(selectedInstance)
+    if include_instances:
+        series.instance.append(selectedInstance)
     study.numberOfInstances = study.numberOfInstances + 1
     series.numberOfInstances = series.numberOfInstances + 1
     return
 
 
 def _add_imaging_study_series(study: imagingstudy.ImagingStudy, ds: dataset.FileDataset, fp):
-    
+
     # inti data container
     series_data = {}
 
@@ -114,7 +117,8 @@ def _add_imaging_study_series(study: imagingstudy.ImagingStudy, ds: dataset.File
     )
 
     global study_list_modality_global
-    study_list_modality_global = dicom2fhirutils.update_study_modality_list(study_list_modality_global, ds.Modality)
+    study_list_modality_global = dicom2fhirutils.update_study_modality_list(
+        study_list_modality_global, ds.Modality)
 
     stime = None
     try:
@@ -139,42 +143,41 @@ def _add_imaging_study_series(study: imagingstudy.ImagingStudy, ds: dataset.File
         series_data["laterality"] = dicom2fhirutils.gen_coding_text_only(
             ds.Laterality)
     except Exception:
-        pass 
-
+        pass
 
     ########### extension stuff here ##########
-    
+
     series_extensions = []
 
-    #MR extension
+    # MR extension
     if series_data["modality"].code == "MR":
-        
+
         e_MR = extension_MR.gen_extension(ds)
         series_extensions.append(e_MR)
-    
-    #CT extension
+
+    # CT extension
     if series_data["modality"].code == "CT":
-        
+
         e_CT = extension_CT.gen_extension(ds)
         series_extensions.append(e_CT)
 
-    #MG CR DX extension
+    # MG CR DX extension
     if (series_data["modality"].code == "MG" or series_data["modality"].code == "CR" or series_data["modality"].code == "DX"):
-        
+
         e_MG_CR_DX = extension_MG_CR_DX.gen_extension(ds)
         series_extensions.append(e_MG_CR_DX)
 
-    #PT NM extension
+    # PT NM extension
     if (series_data["modality"].code == "PT" or series_data["modality"].code == "NM"):
-        
+
         e_PT_NM = extension_PT_NM.gen_extension(ds)
         series_extensions.append(e_PT_NM)
-    
-    #device extension
+
+    # device extension
     e_device = extension_device.gen_extension(ds)
     series_extensions.append(e_device)
 
-    #contrast extension
+    # contrast extension
     e_contrast = extension_contrast.gen_extension(ds)
     series_extensions.append(e_contrast)
 
@@ -188,12 +191,13 @@ def _add_imaging_study_series(study: imagingstudy.ImagingStudy, ds: dataset.File
     _add_imaging_study_instance(study, series, ds)
     return
 
+
 def _create_imaging_study(ds, fp, dcmDir) -> imagingstudy.ImagingStudy:
     study_list_modality_temp = []
     study_data = {}
     study_data["id"] = str(uuid.uuid4())
     study_data["status"] = "available"
-    
+
     try:
         if ds.StudyDescription != '':
             study_data["description"] = ds.StudyDescription
@@ -205,16 +209,18 @@ def _create_imaging_study(ds, fp, dcmDir) -> imagingstudy.ImagingStudy:
         dicom2fhirutils.gen_accession_identifier(ds.AccessionNumber))
     study_data["identifier"].append(
         dicom2fhirutils.gen_studyinstanceuid_identifier(ds.StudyInstanceUID))
-    
+
     patID9 = str(ds.PatientID)[:9]
     patIdentifier = "https://fhir.diz.uk-erlangen.de/identifiers/patient-id|"+patID9
-    hashedIdentifier = hashlib.sha256(patIdentifier.encode('utf-8')).hexdigest()
+    hashedIdentifier = hashlib.sha256(
+        patIdentifier.encode('utf-8')).hexdigest()
     patientReference = "Patient/"+hashedIdentifier
     patientRef = reference.Reference()
     patientRef.reference = patientReference
     patIdent = identifier.Identifier()
     patIdent.system = "https://fhir.diz.uk-erlangen.de/identifiers/patient-id"
-    patIdent.type = dicom2fhirutils.gen_codeable_concept(["MR"],"http://terminology.hl7.org/CodeSystem/v2-0203")
+    patIdent.type = dicom2fhirutils.gen_codeable_concept(
+        ["MR"], "http://terminology.hl7.org/CodeSystem/v2-0203")
     patIdent.value = patID9
     patientRef.identifier = patIdent
     study_data["subject"] = patientRef
@@ -226,7 +232,8 @@ def _create_imaging_study(ds, fp, dcmDir) -> imagingstudy.ImagingStudy:
 
     procedures = []
     try:
-        procedures = dicom2fhirutils.dcm_coded_concept(ds.ProcedureCodeSequence)
+        procedures = dicom2fhirutils.dcm_coded_concept(
+            ds.ProcedureCodeSequence)
     except Exception:
         pass
 
@@ -267,11 +274,11 @@ def _create_imaging_study(ds, fp, dcmDir) -> imagingstudy.ImagingStudy:
     study_data["modality"] = []
 
     study_extensions = []
-    
-    #reason extension
+
+    # reason extension
     e_reason = extension_reason.gen_extension(ds)
     study_extensions.append(e_reason)
-    
+
     study_data["extension"] = study_extensions
 
     # instantiate study here, when all required fields are available
@@ -302,7 +309,8 @@ def process_dicom_2_fhir(dcmDir: str) -> imagingstudy.ImagingStudy:
                     raise Exception(
                         "Incorrect DCM path, more than one study detected")
                 if imagingStudy is None:
-                    imagingStudy, accession_number = _create_imaging_study(ds, fp, dcmDir)
+                    imagingStudy, accession_number = _create_imaging_study(
+                        ds, fp, dcmDir)
                 else:
                     _add_imaging_study_series(imagingStudy, ds, fp)
         except Exception as e:
@@ -310,15 +318,15 @@ def process_dicom_2_fhir(dcmDir: str) -> imagingstudy.ImagingStudy:
             pass  # file is not a dicom file
 
     # add modality list to study level
-    try: 
+    try:
         mod_codings = []
         for mod in study_list_modality_global:
             c = dicom2fhirutils.gen_coding(
-            value=mod,
-            system=dicom2fhirutils.ACQUISITION_MODALITY_SYS)
+                value=mod,
+                system=dicom2fhirutils.ACQUISITION_MODALITY_SYS)
             mod_codings.append(c)
         imagingStudy.modality = mod_codings
     except Exception as e:
-            pass
+        pass
 
     return imagingStudy, studyInstanceUID, accession_number
