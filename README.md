@@ -12,8 +12,10 @@ The library does not rely on the terminology service therefore, any coding that 
 
 ## Usage
 
+Add input and output paths in dicom2fhir_wrapper.py
+
 ```
-dicom2fhir.process_dicom_2_fhir("study directory")
+run dicom2fhir_wrapper.py
 ```
 
 The dicom file represents a single instance within DICOM study. A study is a collection of instances grouped by series.
