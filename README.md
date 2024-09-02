@@ -12,7 +12,9 @@ The library does not rely on the terminology service therefore, any coding that 
 
 ## Usage
 
-Add input and output paths in dicom2fhir_wrapper.py
+* Add input and output paths in dicom2fhir_wrapper.py (line 11)
+
+* Choose to include instance data via setting the boolean value in dicom2fhir.py (line 23)
 
 ```
 run dicom2fhir_wrapper.py
