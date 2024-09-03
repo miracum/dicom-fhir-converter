@@ -277,7 +277,8 @@ def _create_imaging_study(ds, fp, dcmDir) -> imagingstudy.ImagingStudy:
 
     # reason extension
     e_reason = extension_reason.gen_extension(ds)
-    study_extensions.append(e_reason)
+    if e_reason is not None: 
+        study_extensions.append(e_reason)
 
     study_data["extension"] = study_extensions
 

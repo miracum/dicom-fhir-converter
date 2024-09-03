@@ -12,6 +12,12 @@ def gen_extension(ds):
         pass
     
     #reason
+
+    try: 
+        if len(ds[0x0040, 0x1002].value) <= 0:
+            return None
+    except Exception:
+        return None
     try:
         dicom2fhirutils.add_extension_value(
             e = extension_reason,
