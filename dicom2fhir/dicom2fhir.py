@@ -4,6 +4,7 @@ from fhir.resources import R4B as fr
 from fhir.resources.R4B import reference
 from fhir.resources.R4B import imagingstudy
 from fhir.resources.R4B import identifier
+from fhir.resources.R4B import meta
 from pydicom import dcmread
 from pydicom import dataset
 from tqdm import tqdm
@@ -195,6 +196,9 @@ def _add_imaging_study_series(study: imagingstudy.ImagingStudy, ds: dataset.File
 def _create_imaging_study(ds, fp, dcmDir) -> imagingstudy.ImagingStudy:
     study_list_modality_temp = []
     study_data = {}
+
+    m = meta.Meta(profile=["https://www.medizininformatik-initiative.de/fhir/ext/modul-bildgebung/StructureDefinition/mii-pr-bildgebung-bildgebungsstudie"])
+    study_data["meta"] = m
     study_data["id"] = str(uuid.uuid4())
     study_data["status"] = "available"
 
