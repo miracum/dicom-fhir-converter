@@ -15,7 +15,8 @@ from dicom2fhir import dicom2fhirutils
 from dicom2fhir import extension_MR
 from dicom2fhir import extension_CT
 from dicom2fhir import extension_MG_CR_DX
-from dicom2fhir import extension_PT_NM
+from dicom2fhir import extension_PT
+from dicom2fhir import extension_NM
 from dicom2fhir import extension_device
 from dicom2fhir import extension_contrast
 from dicom2fhir import extension_instance
@@ -53,15 +54,6 @@ def _add_imaging_study_instance(
         system=dicom2fhirutils.SOP_CLASS_SYS
     )
     instance_data["number"] = ds.InstanceNumber
-
-    try:
-        if series.modality.code == "SR":
-            seq = ds.ConceptNameCodeSequence
-            instance_data["title"] = seq[0x0008, 0x0104]
-        else:
-            instance_data["title"] = '\\'.join(ds.ImageType)
-    except Exception:
-        pass  # print("Unable to set instance title")
 
     ########### extension stuff here ##########
 
@@ -168,11 +160,17 @@ def _add_imaging_study_series(study: imagingstudy.ImagingStudy, ds: dataset.File
         e_MG_CR_DX = extension_MG_CR_DX.gen_extension(ds)
         series_extensions.append(e_MG_CR_DX)
 
-    # PT NM extension
-    if (series_data["modality"].code == "PT" or series_data["modality"].code == "NM"):
+    # PT extension
+    if (series_data["modality"].code == "PT"):
 
-        e_PT_NM = extension_PT_NM.gen_extension(ds)
-        series_extensions.append(e_PT_NM)
+        e_PT = extension_PT.gen_extension(ds)
+        series_extensions.append(e_PT)
+
+    # NM extension
+    if (series_data["modality"].code == "NM"):
+
+        e_NM = extension_NM.gen_extension(ds)
+        series_extensions.append(e_NM)
 
     # device extension
     e_device = extension_device.gen_extension(ds)
@@ -234,16 +232,6 @@ def _create_imaging_study(ds, fp, dcmDir) -> imagingstudy.ImagingStudy:
     # endpoint.reference = "file://" + dcmDir
     # study_data["endpoint"].append(endpoint)
 
-    procedures = []
-    try:
-        procedures = dicom2fhirutils.dcm_coded_concept(
-            ds.ProcedureCodeSequence)
-    except Exception:
-        pass
-
-    study_data["procedureCode"] = dicom2fhirutils.gen_procedurecode_array(
-        procedures)
-
     studyTime = None
     try:
         studyTime = ds.StudyTime
@@ -256,21 +244,6 @@ def _create_imaging_study(ds, fp, dcmDir) -> imagingstudy.ImagingStudy:
             studyDate, studyTime)
     except Exception:
         pass
-
-    reason = None
-    reasonStr = None
-    try:
-        reason = dicom2fhirutils.dcm_coded_concept(
-            ds.ReasonForRequestedProcedureCodeSequence)
-    except Exception:
-        pass  # print("Reason for Request procedure Code Seq is not available")
-
-    try:
-        reasonStr = ds.ReasonForTheRequestedProcedure
-    except Exception:
-        pass  # print ("Reason for Requested procedures not found")
-
-    study_data["reasonCode"] = dicom2fhirutils.gen_reason(reason, reasonStr)
 
     study_data["numberOfSeries"] = 0
     study_data["numberOfInstances"] = 0

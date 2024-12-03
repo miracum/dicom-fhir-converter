@@ -1,5 +1,3 @@
-import os
-import sys
 import uuid
 from typing import List
 from fhir.resources.R4B.bundle import Bundle, BundleEntry, BundleEntryRequest
@@ -8,8 +6,8 @@ from fhir.resources.R4B.resource import Resource
 
 from dicom2fhir import dicom2fhir
 
-input_path = "" #add input path of dicom study
-output_path = "" #add output path for json-files
+input_path = "C:/Users/iancuaa/Desktop/study_MEO-2024096495/" #add input path of dicom study
+output_path = "C:/Users/iancuaa/Desktop/output/" #add output path for json-files
 
 
 # wrapper function to process study

@@ -19,7 +19,7 @@ def gen_extension(ds):
     except Exception:
         pass
     try:
-        if ds[0x0018, 0x0010].value != None:
+        if ds[0x0018, 0x0010].value is not None:
             valueContrast = True
         else:
             valueContrast = False
@@ -35,7 +35,6 @@ def gen_extension(ds):
         ex_list.append(extension_contrastBolus)
     except Exception:
         pass
-
     
     #contrastBolusDetails
     try:
@@ -51,6 +50,7 @@ def gen_extension(ds):
             value= None,
             system=None,
             unit= None,
+            display=ds[0x0018, 0x0010].value,
             type="reference"
         )
         ex_list.append(extension_contrastBolusDetails)

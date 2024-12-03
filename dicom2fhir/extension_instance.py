@@ -85,13 +85,19 @@ def gen_extension(ds):
     except Exception:
         pass
     try:
+
+        imageType_values = ds[0x0008, 0x0008].value
+        imageTypes = []
+        for v in imageType_values:
+            imageTypes.append(v)
+
         dicom2fhirutils.add_extension_value(
             e = extension_imageType,
             url = "imageType",
-            value= str(ds[0x0008, 0x0008].value),
-            system= None,
+            value= imageTypes,
+            system="https://www.medizininformatik-initiative.de/fhir/ext/modul-bildgebung/CodeSystem/mii-cs-bildgebung-instance-image-type",
             unit= None,
-            type="string"
+            type="codeableconcept"
         )
         ex_list.append(extension_imageType)
     except Exception:

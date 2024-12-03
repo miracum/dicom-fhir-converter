@@ -228,7 +228,9 @@ def gen_reason(reason, reasonStr):
 def gen_coding(value, system, display=None):
     if isinstance(value, list):
         raise Exception(
-        "More than one code for type Coding detected")
+            "More than one code for type Coding detected")
+    if value is None:
+        return
     c = coding.Coding()
     c.system = system
     c.code = value
@@ -236,12 +238,14 @@ def gen_coding(value, system, display=None):
     return c
 
 
-def gen_codeable_concept(value_list: list, system, display=None):
+def gen_codeable_concept(value_list: list, system, display=None, text=None):
     c = codeableconcept.CodeableConcept()
     c.coding = []
     for _l in value_list:
         m = gen_coding(_l, system, display)
-        c.coding.append(m)
+        if m is not None:
+            c.coding.append(m)
+    c.text = text
     return c
 
 
@@ -251,7 +255,7 @@ def gen_bodysite_coding(bd):
     c = gen_coding(
         value=bd_snomed,
         system="http://snomed.info/sct",
-        display = meaning
+        display=meaning
     )
     return c
 
@@ -277,13 +281,18 @@ def gen_coding_text_only(text):
     c.userSelected = True
     return c
 
+
 def gen_extension(url):
     e = extension.Extension()
     e.url = url
-    
+
     return e
 
-def add_extension_value(e, url, value, system, unit, type, display=None):
+
+def add_extension_value(e, url, value, system, unit, type, display=None, text=None):
+
+    if value is None and text is None and display is None:
+        return
 
     if type == "string":
         e.valueString = value
@@ -303,18 +312,23 @@ def add_extension_value(e, url, value, system, unit, type, display=None):
 
     if type == "reference":
         e.url = url
-        e.valueReference = value
-    
+        ref = reference.Reference()
+        ref.reference = value
+        ref.display = display
+        e.valueReference = ref
+
     if type == "datetime":
         e.url = url
         e.valueDateTime = value
 
     if type == "codeableconcept":
+        v = value if isinstance(value, list) else [value]
         e.url = url
-        c = gen_codeable_concept([value], system, display)
+        c = gen_codeable_concept(v, system, display, text)
         e.valueCodeableConcept = c
-        
+
     return e
+
 
 def dcm_coded_concept(CodeSequence):
     concepts = []
