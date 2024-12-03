@@ -3,3 +3,4 @@ pydicom>=2.4.3
 setuptools
 lxml
 pandas
+tqdm
