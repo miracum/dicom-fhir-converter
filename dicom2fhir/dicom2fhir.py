@@ -3,6 +3,7 @@ import os
 from fhir.resources import R4B as fr
 from fhir.resources.R4B import reference
 from fhir.resources.R4B import imagingstudy
+from fhir.resources.R4B import device
 from fhir.resources.R4B import identifier
 from fhir.resources.R4B import meta
 from pydicom import dcmread
@@ -17,7 +18,6 @@ from dicom2fhir import extension_CT
 from dicom2fhir import extension_MG_CR_DX
 from dicom2fhir import extension_PT
 from dicom2fhir import extension_NM
-from dicom2fhir import extension_device
 from dicom2fhir import extension_contrast
 from dicom2fhir import extension_instance
 from dicom2fhir import extension_reason
@@ -61,7 +61,8 @@ def _add_imaging_study_instance(
 
     # instance extension
     e_instance = extension_instance.gen_extension(ds)
-    instance_extensions.append(e_instance)
+    if e_instance is not None:
+        instance_extensions.append(e_instance)
 
     instance_data["extension"] = instance_extensions
 
@@ -138,6 +139,28 @@ def _add_imaging_study_series(study: imagingstudy.ImagingStudy, ds: dataset.File
     except Exception:
         pass
 
+
+    try: 
+        dev = device.Device()
+        dev.deviceName = [
+        {
+            "type": "model-name",
+            "name": ds.ManufacturerModelName
+        }
+        ]
+        dev.manufacturer = ds.Manufacturer
+        dev.id = ds.DeviceSerialNumber
+        dev_ref = reference.Reference()
+        dev_ref.reference = f"Device/{dev.id}"
+        series_data["performer"] = [
+        {
+            "actor": dev_ref
+        }
+        ]
+    except Exception:
+        pass
+
+
     ########### extension stuff here ##########
 
     series_extensions = []
@@ -146,39 +169,41 @@ def _add_imaging_study_series(study: imagingstudy.ImagingStudy, ds: dataset.File
     if series_data["modality"].code == "MR":
 
         e_MR = extension_MR.gen_extension(ds)
-        series_extensions.append(e_MR)
+        if e_MR is not None:
+            series_extensions.append(e_MR)
 
     # CT extension
     if series_data["modality"].code == "CT":
 
         e_CT = extension_CT.gen_extension(ds)
-        series_extensions.append(e_CT)
+        if e_CT is not None:
+            series_extensions.append(e_CT)
 
     # MG CR DX extension
     if (series_data["modality"].code == "MG" or series_data["modality"].code == "CR" or series_data["modality"].code == "DX"):
 
         e_MG_CR_DX = extension_MG_CR_DX.gen_extension(ds)
-        series_extensions.append(e_MG_CR_DX)
+        if e_MG_CR_DX is not None:
+            series_extensions.append(e_MG_CR_DX)
 
     # PT extension
     if (series_data["modality"].code == "PT"):
 
         e_PT = extension_PT.gen_extension(ds)
-        series_extensions.append(e_PT)
+        if e_PT is not None:
+            series_extensions.append(e_PT)
 
     # NM extension
     if (series_data["modality"].code == "NM"):
 
         e_NM = extension_NM.gen_extension(ds)
-        series_extensions.append(e_NM)
-
-    # device extension
-    e_device = extension_device.gen_extension(ds)
-    series_extensions.append(e_device)
+        if e_NM is not None:
+            series_extensions.append(e_NM)
 
     # contrast extension
     e_contrast = extension_contrast.gen_extension(ds)
-    series_extensions.append(e_contrast)
+    if e_contrast is not None:
+        series_extensions.append(e_contrast)
 
     series_data["extension"] = series_extensions
 

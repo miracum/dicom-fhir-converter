@@ -65,7 +65,8 @@ def gen_extension(ds):
         value = ds[0x0054, 0x1001].value
         if value == "BQML":
             value = ["Bq/ml", "Becquerels/milliliter"]
-        #ToDo mehr Mapping ergänzen!
+        else:
+            value = [value, None]
 
         dicom2fhirutils.add_extension_value(
             e = extension_units,
@@ -230,5 +231,12 @@ def gen_extension(ds):
         pass
 
     extension_PT_NM.extension = ex_list
+
+    try:
+        if not extension_PT_NM.extension:
+            raise ValueError("The PT extension has no nested extensions.")
+    except Exception as e:
+        print(f"Error in PT extension: {e}")
+        return None
 
     return extension_PT_NM

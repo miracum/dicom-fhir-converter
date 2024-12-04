@@ -19,10 +19,10 @@ def gen_extension(ds):
     except Exception:
         pass
     try:
-        if ds[0x0018, 0x0010].value is not None:
-            valueContrast = True
-        else:
+        if ds[0x0018, 0x0010].value is None:
             valueContrast = False
+        else:
+            valueContrast = True
 
         dicom2fhirutils.add_extension_value(
             e = extension_contrastBolus,
@@ -34,30 +34,34 @@ def gen_extension(ds):
         )
         ex_list.append(extension_contrastBolus)
     except Exception:
-        pass
+        return None
     
     #contrastBolusDetails
     try:
+        display_value = ds[0x0018, 0x0010].value
         extension_contrastBolusDetails = dicom2fhirutils.gen_extension(
             url="contrastBolusDetails"
             )
-    except Exception:
-        pass
-    try:
         dicom2fhirutils.add_extension_value(
             e = extension_contrastBolusDetails,
             url = "contrastBolusDetails",
             value= None,
             system=None,
             unit= None,
-            display=ds[0x0018, 0x0010].value,
+            display=display_value,
             type="reference"
         )
         ex_list.append(extension_contrastBolusDetails)
     except Exception:
         pass
     
-
     extension_contrast.extension = ex_list
+
+    try:
+        if not extension_contrast.extension:
+            raise ValueError("The instance extension has no nested extensions.")
+    except Exception as e:
+        print(f"Error in contrast extension: {e}")
+        return None
 
     return extension_contrast

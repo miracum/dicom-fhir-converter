@@ -114,4 +114,11 @@ def gen_extension(ds):
 
     extension_CT.extension = ex_list
 
+    try:
+        if not extension_CT.extension:
+            raise ValueError("The CT extension has no nested extensions.")
+    except Exception as e:
+        print(f"Error in CT extension: {e}")
+        return None
+
     return extension_CT
