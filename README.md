@@ -8,20 +8,20 @@ This library utilizes the following projects:
 - fhir.resources project (https://pypi.org/project/fhir.resources/) - used to create FHIR models
 - pyDICOM (https://pyDICOM.github.io/) - used to read DICOM instances
 
-The library does not rely on the terminology service therefore, any coding that requires a look-up were coded with ```"userSelected=True"``` values.
-
 ## Usage
 
 ### Run Python script and give command line arguments as follows:
 
 -i "input_path" (mandatory, input path of DICOM study) <br>
 -o "output_path" (mandatory, output path to write json-file in) <br>
---no-level_instance (optional, does not include instance level into ImagingStudy when used) <br>
---build_bundle (optional, builds a FHIR bundle including the ImagingStudy) <br>
+--no-level_instance (optional, does not include instance level into ImagingStudy when set) <br>
+--build_bundle (optional, builds a FHIR bundle including the ImagingStudy when set) <br>
 
 ### Sample call
 
+```bash
 python dicom2fhir_wrapper.py -i "my_input_path" -o "my_output_path" --no-level_instance
+```
 
 This call would convert the DICOM study in "my_input_path" into a FHIR Imaging study, without building a bundle and without including the instance level, and write the json-file in "my_output_path".
 
