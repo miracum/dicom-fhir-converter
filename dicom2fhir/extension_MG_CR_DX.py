@@ -209,7 +209,7 @@ def gen_extension(ds):
         if not extension_MG_CR_DX.extension:
             raise ValueError("The MG-CR-DX extension has no nested extensions.")
     except Exception as e:
-        print(f"Error in MG-CR-DX extension: {e}")
+        print(f"Info: {e}")
         return None
 
     return extension_MG_CR_DX

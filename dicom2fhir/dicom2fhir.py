@@ -22,7 +22,6 @@ from dicom2fhir import extension_contrast
 from dicom2fhir import extension_instance
 from dicom2fhir import extension_reason
 
-include_instances = True
 
 # global list for all distinct series modalities
 study_list_modality_global = []
@@ -31,7 +30,8 @@ study_list_modality_global = []
 def _add_imaging_study_instance(
     study: imagingstudy.ImagingStudy,
     series: imagingstudy.ImagingStudySeries,
-    ds: dataset.FileDataset
+    ds: dataset.FileDataset,
+    include_instances
 ):
     selectedInstance = None
     instanceUID = ds.SOPInstanceUID
@@ -77,7 +77,7 @@ def _add_imaging_study_instance(
     return
 
 
-def _add_imaging_study_series(study: imagingstudy.ImagingStudy, ds: dataset.FileDataset, fp):
+def _add_imaging_study_series(study: imagingstudy.ImagingStudy, ds: dataset.FileDataset, fp, include_instances):
 
     # inti data container
     series_data = {}
@@ -92,7 +92,8 @@ def _add_imaging_study_series(study: imagingstudy.ImagingStudy, ds: dataset.File
         study.series = []
 
     if selectedSeries is not None:
-        _add_imaging_study_instance(study, selectedSeries, ds)
+        _add_imaging_study_instance(
+            study, selectedSeries, ds, include_instances)
         return
 
     series_data["uid"] = seriesInstanceUID
@@ -139,27 +140,25 @@ def _add_imaging_study_series(study: imagingstudy.ImagingStudy, ds: dataset.File
     except Exception:
         pass
 
-
-    try: 
+    try:
         dev = device.Device()
         dev.deviceName = [
-        {
-            "type": "model-name",
-            "name": ds.ManufacturerModelName
-        }
+            {
+                "type": "model-name",
+                "name": ds.ManufacturerModelName
+            }
         ]
         dev.manufacturer = ds.Manufacturer
         dev.id = ds.DeviceSerialNumber
         dev_ref = reference.Reference()
         dev_ref.reference = f"Device/{dev.id}"
         series_data["performer"] = [
-        {
-            "actor": dev_ref
-        }
+            {
+                "actor": dev_ref
+            }
         ]
     except Exception:
         pass
-
 
     ########### extension stuff here ##########
 
@@ -212,15 +211,16 @@ def _add_imaging_study_series(study: imagingstudy.ImagingStudy, ds: dataset.File
 
     study.series.append(series)
     study.numberOfSeries = study.numberOfSeries + 1
-    _add_imaging_study_instance(study, series, ds)
+    _add_imaging_study_instance(study, series, ds, include_instances)
     return
 
 
-def _create_imaging_study(ds, fp, dcmDir) -> imagingstudy.ImagingStudy:
+def _create_imaging_study(ds, fp, dcmDir, include_instances) -> imagingstudy.ImagingStudy:
     study_list_modality_temp = []
     study_data = {}
 
-    m = meta.Meta(profile=["https://www.medizininformatik-initiative.de/fhir/ext/modul-bildgebung/StructureDefinition/mii-pr-bildgebung-bildgebungsstudie"])
+    m = meta.Meta(profile=[
+                  "https://www.medizininformatik-initiative.de/fhir/ext/modul-bildgebung/StructureDefinition/mii-pr-bildgebung-bildgebungsstudie"])
     study_data["meta"] = m
     study_data["id"] = str(uuid.uuid4())
     study_data["status"] = "available"
@@ -230,12 +230,17 @@ def _create_imaging_study(ds, fp, dcmDir) -> imagingstudy.ImagingStudy:
             study_data["description"] = ds.StudyDescription
     except Exception:
         pass
-
     study_data["identifier"] = []
-    study_data["identifier"].append(
-        dicom2fhirutils.gen_accession_identifier(ds.AccessionNumber))
-    study_data["identifier"].append(
-        dicom2fhirutils.gen_studyinstanceuid_identifier(ds.StudyInstanceUID))
+    if len(ds.AccessionNumber) > 0:
+        accession_nr = ds.AccessionNumber
+        study_data["identifier"].append(
+            dicom2fhirutils.gen_accession_identifier(accession_nr))
+    else:
+        logging.warning(
+            "No accession number availabe - using StudyInstanceUID as Identifier")
+        accession_nr = None
+        study_data["identifier"].append(
+            dicom2fhirutils.gen_studyinstanceuid_identifier(ds.StudyInstanceUID))
 
     patID9 = str(ds.PatientID)[:9]
     patIdentifier = "https://fhir.diz.uk-erlangen.de/identifiers/patient-id|"+patID9
@@ -275,11 +280,27 @@ def _create_imaging_study(ds, fp, dcmDir) -> imagingstudy.ImagingStudy:
 
     study_data["modality"] = []
 
+    procedures = []
+    try:
+        procedures = dicom2fhirutils.dcm_coded_concept(
+            ds.ProcedureCodeSequence)
+    except Exception:
+        pass
+
+    procedures_list = []
+
+    for p in procedures:
+        concept = dicom2fhirutils.gen_codeable_concept(
+            None, None, None, p["code"])
+        procedures_list.append(concept)
+
+    study_data["procedureCode"] = procedures_list
+
     study_extensions = []
 
     # reason extension
     e_reason = extension_reason.gen_extension(ds)
-    if e_reason is not None: 
+    if e_reason is not None:
         study_extensions.append(e_reason)
 
     study_data["extension"] = study_extensions
@@ -287,12 +308,12 @@ def _create_imaging_study(ds, fp, dcmDir) -> imagingstudy.ImagingStudy:
     # instantiate study here, when all required fields are available
     study = imagingstudy.ImagingStudy(**study_data)
 
-    _add_imaging_study_series(study, ds, fp)
+    _add_imaging_study_series(study, ds, fp, include_instances)
 
-    return study, ds.AccessionNumber
+    return study, accession_nr
 
 
-def process_dicom_2_fhir(dcmDir: str) -> imagingstudy.ImagingStudy:
+def process_dicom_2_fhir(dcmDir: str, include_instances: bool) -> imagingstudy.ImagingStudy:
 
     global study_list_modality_global
     files = []
@@ -303,6 +324,7 @@ def process_dicom_2_fhir(dcmDir: str) -> imagingstudy.ImagingStudy:
 
     studyInstanceUID = None
     imagingStudy = None
+    accession_number = None
     for fp in tqdm(files):
         try:
             with dcmread(fp, None, [0x7FE00010], force=True) as ds:
@@ -313,9 +335,10 @@ def process_dicom_2_fhir(dcmDir: str) -> imagingstudy.ImagingStudy:
                         "Incorrect DCM path, more than one study detected")
                 if imagingStudy is None:
                     imagingStudy, accession_number = _create_imaging_study(
-                        ds, fp, dcmDir)
+                        ds, fp, dcmDir, include_instances)
                 else:
-                    _add_imaging_study_series(imagingStudy, ds, fp)
+                    _add_imaging_study_series(
+                        imagingStudy, ds, fp, include_instances)
         except Exception as e:
             logging.error(e)
             pass  # file is not a dicom file

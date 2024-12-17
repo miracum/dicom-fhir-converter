@@ -200,7 +200,7 @@ def gen_extension(ds):
         if not extension_NM.extension:
             raise ValueError("The NM extension has no nested extensions.")
     except Exception as e:
-        print(f"Error in NM extension: {e}")
+        print(f"Info: {e}")
         return None
 
     return extension_NM

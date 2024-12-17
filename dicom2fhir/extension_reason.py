@@ -37,7 +37,7 @@ def gen_extension(ds):
         if not extension_reason.extension:
             raise ValueError("The reason extension has no nested extensions.")
     except Exception as e:
-        print(f"Error in reason extension: {e}")
+        print(f"Info: {e}")
         return None
 
     return extension_reason

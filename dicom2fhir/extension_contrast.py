@@ -61,7 +61,7 @@ def gen_extension(ds):
         if not extension_contrast.extension:
             raise ValueError("The instance extension has no nested extensions.")
     except Exception as e:
-        print(f"Error in contrast extension: {e}")
+        print(f"Info: {e}")
         return None
 
     return extension_contrast

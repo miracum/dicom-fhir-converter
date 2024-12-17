@@ -65,6 +65,8 @@ def gen_extension(ds):
         value = ds[0x0054, 0x1001].value
         if value == "BQML":
             value = ["Bq/ml", "Becquerels/milliliter"]
+        elif value ==  "PROPCPS":
+            value = ["{propcounts}", "Proportional to counts"]
         else:
             value = [value, None]
 
@@ -234,9 +236,9 @@ def gen_extension(ds):
 
     try:
         if not extension_PT_NM.extension:
-            raise ValueError("The PT extension has no nested extensions.")
+            raise Warning("The PT extension has no nested extensions.")
     except Exception as e:
-        print(f"Error in PT extension: {e}")
+        print(f"Info: {e}")
         return None
 
     return extension_PT_NM
