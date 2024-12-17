@@ -14,10 +14,10 @@ The library does not rely on the terminology service therefore, any coding that 
 
 ### Run Python script and give command line arguments as follows:
 
--i "input_path" (mandatory, input path of DICOM study)
--o "output_path" (mandatory, output path to write json-file in)
---no-level_instance (optional, does not include instance level into ImagingStudy when used)
---build_bundle (optional, builds a FHIR bundle including the ImagingStudy)
+-i "input_path" (mandatory, input path of DICOM study) <br>
+-o "output_path" (mandatory, output path to write json-file in) <br>
+--no-level_instance (optional, does not include instance level into ImagingStudy when used) <br>
+--build_bundle (optional, builds a FHIR bundle including the ImagingStudy) <br>
 
 ### Sample call
 
