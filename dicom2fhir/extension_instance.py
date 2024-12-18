@@ -27,7 +27,7 @@ def gen_extension(ds):
     try:
         if dicom2fhirutils.add_extension_value(
             e = extension_pixelSpacingX,
-            url = "pixelSpacing(x)",
+            url = "pixelSpacingX",
             value= pixelSpacingX,
             system= "http://unitsofmeasure.org",
             unit= "millimeter",
@@ -47,7 +47,7 @@ def gen_extension(ds):
     try:
         if dicom2fhirutils.add_extension_value(
             e = extension_pixelSpacingY,
-            url = "pixelSpacing(y)",
+            url = "pixelSpacingY",
             value= pixelSpacingY,
             system= "http://unitsofmeasure.org",
             unit= "millimeter",
