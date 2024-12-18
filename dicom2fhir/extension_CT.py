@@ -19,15 +19,15 @@ def gen_extension(ds):
     except Exception:
         pass
     try:
-        dicom2fhirutils.add_extension_value(
+        if dicom2fhirutils.add_extension_value(
             e = extension_CTDIvol,
             url = "CTDIvol",
             value=ds[0x0018, 0x9345].value,
             system= "http://unitsofmeasure.org",
             unit= "milligray",
             type="quantity"
-        )
-        ex_list.append(extension_CTDIvol)
+        ):
+            ex_list.append(extension_CTDIvol)
     except Exception:
         pass
 
@@ -39,15 +39,15 @@ def gen_extension(ds):
     except Exception:
         pass
     try:
-        dicom2fhirutils.add_extension_value(
+        if dicom2fhirutils.add_extension_value(
             e = extension_KVP,
             url = "KVP",
             value=ds[0x0018, 0x0060].value,
             system= "http://unitsofmeasure.org",
             unit= "kilovolt",
             type="quantity"
-        )
-        ex_list.append(extension_KVP)
+        ):
+            ex_list.append(extension_KVP)
     except Exception:
         pass
 
@@ -59,15 +59,15 @@ def gen_extension(ds):
     except Exception:
         pass
     try:
-        dicom2fhirutils.add_extension_value(
+        if dicom2fhirutils.add_extension_value(
             e = extension_exposureTime,
             url = "exposureTime",
             value=ds[0x0018, 0x1150].value,
             system= "http://unitsofmeasure.org",
             unit= "milliseconds",
             type="quantity"
-        )
-        ex_list.append(extension_exposureTime)
+        ):
+            ex_list.append(extension_exposureTime)
     except Exception:
         pass
 
@@ -79,15 +79,15 @@ def gen_extension(ds):
     except Exception:
         pass
     try:
-        dicom2fhirutils.add_extension_value(
+        if dicom2fhirutils.add_extension_value(
             e = extension_exposure,
             url = "exposure",
             value=ds[0x0018, 0x1152].value,
             system= "http://unitsofmeasure.org",
             unit= "milliampere second",
             type="quantity"
-        )
-        ex_list.append(extension_exposure)
+        ):
+            ex_list.append(extension_exposure)
     except Exception:
         pass
 
@@ -99,15 +99,15 @@ def gen_extension(ds):
     except Exception:
         pass
     try:
-        dicom2fhirutils.add_extension_value(
+        if dicom2fhirutils.add_extension_value(
             e = extension_xRayTubeCurrent,
             url = "xRayTubeCurrent",
             value=ds[0x0018, 0x1151].value,
             system= "http://unitsofmeasure.org",
             unit= "milliampere",
             type="quantity"
-        )
-        ex_list.append(extension_xRayTubeCurrent)
+        ):
+            ex_list.append(extension_xRayTubeCurrent)
     except Exception:
         pass
     

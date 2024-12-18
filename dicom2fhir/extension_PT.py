@@ -70,7 +70,7 @@ def gen_extension(ds):
         else:
             value = [value, None]
 
-        dicom2fhirutils.add_extension_value(
+        if dicom2fhirutils.add_extension_value(
             e = extension_units,
             url = "units",
             value = value[0],
@@ -78,8 +78,8 @@ def gen_extension(ds):
             unit= None,
             display = value[1],
             type= "codeableconcept"
-        )
-        ex_list.append(extension_units)
+        ):
+            ex_list.append(extension_units)
     except Exception:
         pass
 
@@ -98,15 +98,15 @@ def gen_extension(ds):
 
         diff_time = abs(acq_time - start_time)
 
-        dicom2fhirutils.add_extension_value(
+        if dicom2fhirutils.add_extension_value(
             e=extension_tracerExposureTime,
             url="tracerExposureTime",
             value=diff_time,
             system="http://unitsofmeasure.org",
             unit="seconds",
             type="quantity"
-        )
-        ex_list.append(extension_tracerExposureTime)
+        ):
+            ex_list.append(extension_tracerExposureTime)
     except Exception:
         pass
 
@@ -122,7 +122,7 @@ def gen_extension(ds):
         snomed_pharmaceutical = _get_snomed(
             ds[0x0054, 0x0016][0][0x0054, 0x0304][0][0x0008, 0x0100].value, mapping_table_radiopharmaceutical)
 
-        dicom2fhirutils.add_extension_value(
+        if dicom2fhirutils.add_extension_value(
             e=extension_radiopharmaceutical,
             url="radiopharmaceutical",
             value=snomed_pharmaceutical,
@@ -131,8 +131,8 @@ def gen_extension(ds):
                                           0x0304][0][0x0008, 0x0104].value,
             unit=None,
             type="codeableconcept"
-        )
-        ex_list.append(extension_radiopharmaceutical)
+        ):
+            ex_list.append(extension_radiopharmaceutical)
     except Exception:
         pass
 
@@ -148,15 +148,15 @@ def gen_extension(ds):
         dose = ds[0x0054, 0x0016][0][0x0018, 0x1074].value
         dose /= 1000000
 
-        dicom2fhirutils.add_extension_value(
+        if dicom2fhirutils.add_extension_value(
             e=extension_radionuclideTotalDose,
             url="radionuclideTotalDose",
             value=dose,
             system="http://unitsofmeasure.org",
             unit="Megabecquerel",
             type="quantity"
-        )
-        ex_list.append(extension_radionuclideTotalDose)
+        ):
+            ex_list.append(extension_radionuclideTotalDose)
     except Exception:
         pass
 
@@ -168,15 +168,15 @@ def gen_extension(ds):
     except Exception:
         pass
     try:
-        dicom2fhirutils.add_extension_value(
+        if dicom2fhirutils.add_extension_value(
             e=extension_radionuclideHalfLife,
             url="radionuclideHalfLife",
             value=ds[0x0054, 0x0016][0][0x0018, 0x1075].value,
             system="http://unitsofmeasure.org",
             unit="Seconds",
             type="quantity"
-        )
-        ex_list.append(extension_radionuclideHalfLife)
+        ):
+            ex_list.append(extension_radionuclideHalfLife)
     except Exception:
         pass
 
@@ -192,7 +192,7 @@ def gen_extension(ds):
         snomed_radionuclide = _get_snomed(
             ds[0x0054, 0x0016][0][0x0054, 0x0300][0][0x0008, 0x0100].value, mapping_table_radionuclide)
 
-        dicom2fhirutils.add_extension_value(
+        if dicom2fhirutils.add_extension_value(
             e=extension_radionuclide,
             url="radionuclide",
             value=snomed_radionuclide,
@@ -201,8 +201,8 @@ def gen_extension(ds):
                                           0x0300][0][0x0008, 0x0104].value,
             unit=None,
             type="codeableconcept"
-        )
-        ex_list.append(extension_radionuclide)
+        ):
+            ex_list.append(extension_radionuclide)
     except Exception:
         pass
 
@@ -220,15 +220,15 @@ def gen_extension(ds):
         for v in seriesType_values:
             seriesTypes.append(v)
 
-        dicom2fhirutils.add_extension_value(
+        if dicom2fhirutils.add_extension_value(
             e=extension_seriesType,
             url="seriesType",
             value=seriesTypes,
             system="https://www.medizininformatik-initiative.de/fhir/ext/modul-bildgebung/CodeSystem/mii-cs-bildgebung-series-type",
             unit=None,
             type="codeableconcept"
-        )
-        ex_list.append(extension_seriesType)
+        ):
+            ex_list.append(extension_seriesType)
     except Exception:
         pass
 

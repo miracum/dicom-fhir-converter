@@ -88,7 +88,7 @@ def gen_extension(ds):
             url="https://www.medizininformatik-initiative.de/fhir/ext/modul-bildgebung/StructureDefinition/mii-ex-bildgebung-modalitaet-mg-cr-dx"
             )
     except Exception:
-        pass
+        return
 
     #KVP
     try:
@@ -98,15 +98,15 @@ def gen_extension(ds):
     except Exception:
         pass
     try:
-        dicom2fhirutils.add_extension_value(
+        if dicom2fhirutils.add_extension_value(
             e = extension_KVP,
             url = "KVP",
             value=ds[0x0018, 0x0060].value,
             system= "http://unitsofmeasure.org",
             unit= "kilovolt",
             type="quantity"
-        )
-        ex_list.append(extension_KVP)
+        ):
+            ex_list.append(extension_KVP)
     except Exception:
         pass
 
@@ -118,15 +118,15 @@ def gen_extension(ds):
     except Exception:
         pass
     try:
-        dicom2fhirutils.add_extension_value(
+        if dicom2fhirutils.add_extension_value(
             e = extension_exposureTime,
             url = "exposureTime",
             value=ds[0x0018, 0x1150].value,
             system= "http://unitsofmeasure.org",
             unit= "milliseconds",
             type="quantity"
-        )
-        ex_list.append(extension_exposureTime)
+        ):
+            ex_list.append(extension_exposureTime)
     except Exception:
         pass
 
@@ -138,15 +138,15 @@ def gen_extension(ds):
     except Exception:
         pass
     try:
-        dicom2fhirutils.add_extension_value(
+        if dicom2fhirutils.add_extension_value(
             e = extension_exposure,
             url = "exposure",
             value=ds[0x0018, 0x1152].value,
             system= "http://unitsofmeasure.org",
             unit= "milliampere second",
             type="quantity"
-        )
-        ex_list.append(extension_exposure)
+        ):
+            ex_list.append(extension_exposure)
     except Exception:
         pass
 
@@ -158,15 +158,15 @@ def gen_extension(ds):
     except Exception:
         pass
     try:
-        dicom2fhirutils.add_extension_value(
+        if dicom2fhirutils.add_extension_value(
             e = extension_xRayTubeCurrent,
             url = "xRayTubeCurrent",
             value=ds[0x0018, 0x1151].value,
             system= "http://unitsofmeasure.org",
             unit= "milliampere",
             type="quantity"
-        )
-        ex_list.append(extension_xRayTubeCurrent)
+        ):
+            ex_list.append(extension_xRayTubeCurrent)
     except Exception:
         pass
 
@@ -189,7 +189,7 @@ def gen_extension(ds):
         else: 
             snomed_value = None
 
-        dicom2fhirutils.add_extension_value(
+        if dicom2fhirutils.add_extension_value(
             e = extension_viewPosition,
             url = "viewPosition",
             value=snomed_value,
@@ -197,8 +197,8 @@ def gen_extension(ds):
             unit= None,
             display = ds[0x0018, 0x5101].value,
             type="codeableconcept"
-        )
-        ex_list.append(extension_viewPosition)
+        ):
+            ex_list.append(extension_viewPosition)
     except Exception:
         pass
     

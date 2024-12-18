@@ -24,15 +24,15 @@ def gen_extension(ds):
         value = ds[0x0018, 0x0020].value
         sequence_values = value.split("\\")
 
-        dicom2fhirutils.add_extension_value(
+        if dicom2fhirutils.add_extension_value(
             e=extension_scanningSequence,
             url="scanningSequence",
             value=sequence_values,
             system="https://www.medizininformatik-initiative.de/fhir/ext/modul-bildgebung/CodeSystem/mii-cs-bildgebung-scanning-sequence",
             unit=None,
             type="codeableconcept",
-        )
-        ex_list.append(extension_scanningSequence)
+        ):
+            ex_list.append(extension_scanningSequence)
     except Exception:
         pass
 
@@ -49,15 +49,15 @@ def gen_extension(ds):
         for v in values:
             variant_values.append(v)
 
-        dicom2fhirutils.add_extension_value(
+        if dicom2fhirutils.add_extension_value(
             e=extension_scanningSequenceVariant,
             url="scanningSequenceVariant",
             value=variant_values,
             system="https://www.medizininformatik-initiative.de/fhir/ext/modul-bildgebung/CodeSystem/mii-cs-bildgebung-scanning-sequence-variant",
             unit=None,
             type="codeableconcept"
-        )
-        ex_list.append(extension_scanningSequenceVariant)
+        ):
+            ex_list.append(extension_scanningSequenceVariant)
     except Exception:
         pass
 
@@ -69,15 +69,15 @@ def gen_extension(ds):
     except Exception:
         pass
     try:
-        dicom2fhirutils.add_extension_value(
+        if dicom2fhirutils.add_extension_value(
             e=extension_magneticFieldStrength,
             url="magneticFieldStrength",
             value=ds[0x0018, 0x0087].value,
             system="http://unitsofmeasure.org",
             unit="tesla",
             type="quantity"
-        )
-        ex_list.append(extension_magneticFieldStrength)
+        ):
+            ex_list.append(extension_magneticFieldStrength)
     except Exception:
         pass
 
@@ -89,15 +89,15 @@ def gen_extension(ds):
     except Exception:
         pass
     try:
-        dicom2fhirutils.add_extension_value(
+        if dicom2fhirutils.add_extension_value(
             e=extension_TE,
             url="echoTime",
             value=ds[0x0018, 0x0081].value,
             system="http://unitsofmeasure.org",
             unit="milliseconds",
             type="quantity"
-        )
-        ex_list.append(extension_TE)
+        ):
+            ex_list.append(extension_TE)
     except Exception:
         pass
 
@@ -109,15 +109,15 @@ def gen_extension(ds):
     except Exception:
         pass
     try:
-        dicom2fhirutils.add_extension_value(
+        if dicom2fhirutils.add_extension_value(
             e=extension_TR,
             url="repetitionTime",
             value=ds[0x0018, 0x0080].value,
             system="http://unitsofmeasure.org",
             unit="milliseconds",
             type="quantity"
-        )
-        ex_list.append(extension_TR)
+        ):
+            ex_list.append(extension_TR)
     except Exception:
         pass
 
@@ -129,15 +129,15 @@ def gen_extension(ds):
     except Exception:
         pass
     try:
-        dicom2fhirutils.add_extension_value(
+        if dicom2fhirutils.add_extension_value(
             e=extension_TI,
             url="inversionTime",
             value=ds[0x0018, 0x0082].value,
             system="http://unitsofmeasure.org",
             unit="milliseconds",
             type="quantity"
-        )
-        ex_list.append(extension_TI)
+        ):
+            ex_list.append(extension_TI)
     except Exception:
         pass
 
@@ -149,15 +149,15 @@ def gen_extension(ds):
     except Exception:
         pass
     try:
-        dicom2fhirutils.add_extension_value(
+        if dicom2fhirutils.add_extension_value(
             e=extension_flipAngle,
             url="flipAngle",
             value=ds[0x0018, 0x1314].value,
             system="http://unitsofmeasure.org",
             unit="plane angle degree",
             type="quantity"
-        )
-        ex_list.append(extension_flipAngle)
+        ):
+            ex_list.append(extension_flipAngle)
     except Exception:
         pass
 

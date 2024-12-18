@@ -289,10 +289,13 @@ def _create_imaging_study(ds, fp, dcmDir, include_instances) -> imagingstudy.Ima
 
     procedures_list = []
 
-    for p in procedures:
-        concept = dicom2fhirutils.gen_codeable_concept(
-            None, None, None, p["code"])
-        procedures_list.append(concept)
+    try:
+        for p in procedures:
+            concept = dicom2fhirutils.gen_codeable_concept(
+                None, None, None, p["code"])
+            procedures_list.append(concept)
+    except Exception:
+        pass
 
     study_data["procedureCode"] = procedures_list
 

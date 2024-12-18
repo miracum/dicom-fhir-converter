@@ -25,15 +25,15 @@ def gen_extension(ds):
     except Exception:
         pass
     try:
-        dicom2fhirutils.add_extension_value(
+        if dicom2fhirutils.add_extension_value(
             e = extension_pixelSpacingX,
             url = "pixelSpacing(x)",
             value= pixelSpacingX,
             system= "http://unitsofmeasure.org",
             unit= "millimeter",
             type="quantity"
-        )
-        ex_list.append(extension_pixelSpacingX)
+        ):
+            ex_list.append(extension_pixelSpacingX)
     except Exception:
         pass
 
@@ -45,15 +45,15 @@ def gen_extension(ds):
     except Exception:
         pass
     try:
-        dicom2fhirutils.add_extension_value(
+        if dicom2fhirutils.add_extension_value(
             e = extension_pixelSpacingY,
             url = "pixelSpacing(y)",
             value= pixelSpacingY,
             system= "http://unitsofmeasure.org",
             unit= "millimeter",
             type="quantity"
-        )
-        ex_list.append(extension_pixelSpacingY)
+        ):
+            ex_list.append(extension_pixelSpacingY)
     except Exception:
         pass
 
@@ -65,15 +65,15 @@ def gen_extension(ds):
     except Exception:
         pass
     try:
-        dicom2fhirutils.add_extension_value(
+        if dicom2fhirutils.add_extension_value(
             e = extension_sliceThickness,
             url = "sliceThickness",
             value= ds[0x0018, 0x0050].value,
             system= "http://unitsofmeasure.org",
             unit= "millimeter",
             type="quantity"
-        )
-        ex_list.append(extension_sliceThickness)
+        ):
+            ex_list.append(extension_sliceThickness)
     except Exception:
         pass
 
@@ -91,15 +91,15 @@ def gen_extension(ds):
         for v in imageType_values:
             imageTypes.append(v)
 
-        dicom2fhirutils.add_extension_value(
+        if dicom2fhirutils.add_extension_value(
             e = extension_imageType,
             url = "imageType",
             value= imageTypes,
             system="https://www.medizininformatik-initiative.de/fhir/ext/modul-bildgebung/CodeSystem/mii-cs-bildgebung-instance-image-type",
             unit= None,
             type="codeableconcept"
-        )
-        ex_list.append(extension_imageType)
+        ):
+            ex_list.append(extension_imageType)
     except Exception:
         pass
 

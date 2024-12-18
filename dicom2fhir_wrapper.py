@@ -87,7 +87,7 @@ def arg_parser():
         dest="include_instances",
         default=True,
         action=argparse.BooleanOptionalAction,
-        help="Option to include DICOM instance level or not"
+        help="Option to exclude DICOM instance level from resource"
     )
     parser.add_argument(
         "-b",

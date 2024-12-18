@@ -19,20 +19,20 @@ def gen_extension(ds):
     except Exception:
         pass
     try:
-        if ds[0x0018, 0x0010].value is None:
+        if (ds[0x0018, 0x0010].value is None) or (len(ds[0x0018, 0x0010].value) == 0):
             valueContrast = False
         else:
             valueContrast = True
 
-        dicom2fhirutils.add_extension_value(
+        if dicom2fhirutils.add_extension_value(
             e = extension_contrastBolus,
             url = "contrastBolus",
             value=valueContrast,
             system=None,
             unit= None,
             type="boolean"
-        )
-        ex_list.append(extension_contrastBolus)
+        ):
+            ex_list.append(extension_contrastBolus)
     except Exception:
         return None
     
@@ -42,7 +42,7 @@ def gen_extension(ds):
         extension_contrastBolusDetails = dicom2fhirutils.gen_extension(
             url="contrastBolusDetails"
             )
-        dicom2fhirutils.add_extension_value(
+        if dicom2fhirutils.add_extension_value(
             e = extension_contrastBolusDetails,
             url = "contrastBolusDetails",
             value= None,
@@ -50,8 +50,8 @@ def gen_extension(ds):
             unit= None,
             display=display_value,
             type="reference"
-        )
-        ex_list.append(extension_contrastBolusDetails)
+        ):
+            ex_list.append(extension_contrastBolusDetails)
     except Exception:
         pass
     

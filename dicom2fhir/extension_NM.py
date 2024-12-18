@@ -61,7 +61,7 @@ def gen_extension(ds):
     except Exception:
         pass
     try:
-        dicom2fhirutils.add_extension_value(
+        if dicom2fhirutils.add_extension_value(
             e=extension_radiopharmaceutical,
             url="radiopharmaceutical",
             value=None,
@@ -71,8 +71,8 @@ def gen_extension(ds):
             text=ds[0x0054, 0x0016][0][0x0018,
                                        0x0031].value,
             type="codeableconcept"
-        )
-        ex_list.append(extension_radiopharmaceutical)
+        ):
+            ex_list.append(extension_radiopharmaceutical)
     except Exception:
         pass
 
@@ -88,7 +88,7 @@ def gen_extension(ds):
             ds[0x0054, 0x0016][0][0x0054,
                                   0x0300][0][0x0008, 0x0100].value, mapping_table)
 
-        dicom2fhirutils.add_extension_value(
+        if dicom2fhirutils.add_extension_value(
             e=extension_radionuclide,
             url="radionuclide",
             value=snomed_radionucleide,
@@ -97,8 +97,8 @@ def gen_extension(ds):
                                           0x0300][0][0x0008, 0x0104].value,
             unit=None,
             type="codeableconcept"
-        )
-        ex_list.append(extension_radionuclide)
+        ):
+            ex_list.append(extension_radionuclide)
     except Exception:
         pass
 
@@ -117,15 +117,15 @@ def gen_extension(ds):
 
         diff_time = abs(acq_time - start_time)
 
-        dicom2fhirutils.add_extension_value(
+        if dicom2fhirutils.add_extension_value(
             e=extension_tracerExposureTime,
             url="tracerExposureTime",
             value=diff_time,
             system="http://unitsofmeasure.org",
             unit="seconds",
             type="quantity"
-        )
-        ex_list.append(extension_tracerExposureTime)
+        ):
+            ex_list.append(extension_tracerExposureTime)
     except Exception:
         pass
 
@@ -140,15 +140,15 @@ def gen_extension(ds):
 
         dose = ds[0x0054, 0x0016][0][0x0018, 0x1074].value
 
-        dicom2fhirutils.add_extension_value(
+        if dicom2fhirutils.add_extension_value(
             e=extension_radionuclideTotalDose,
             url="radionuclideTotalDose",
             value=dose,
             system="http://unitsofmeasure.org",
             unit="Megabecquerel",
             type="quantity"
-        )
-        ex_list.append(extension_radionuclideTotalDose)
+        ):
+            ex_list.append(extension_radionuclideTotalDose)
     except Exception:
         pass
 
@@ -160,39 +160,39 @@ def gen_extension(ds):
     except Exception:
         pass
     try:
-        dicom2fhirutils.add_extension_value(
+        if dicom2fhirutils.add_extension_value(
             e=extension_radionuclideHalfLife,
             url="radionuclideHalfLife",
             value=ds[0x0054, 0x0016][0][0x0018, 0x1075].value,
             system="http://unitsofmeasure.org",
             unit="Seconds",
             type="quantity"
-        )
-        ex_list.append(extension_radionuclideHalfLife)
+        ):
+            ex_list.append(extension_radionuclideHalfLife)
     except Exception:
         pass
 
     # units
     # am UKER bei NM-Serien nicht befüllt
 
-    # try:
-    #     extension_units = dicom2fhirutils.gen_extension(
-    #         url="units"
-    #     )
-    # except Exception:
-    #     pass
-    # try:
-    #     dicom2fhirutils.add_extension_value(
-    #         e=extension_units,
-    #         url="units",
-    #         value=ds[0x0054, 0x1001].value,
-    #         system="http://unitsofmeasure.org",
-    #         unit=None,
-    #         type="codeableconcept"
-    #     )
-    #     ex_list.append(extension_units)
-    # except Exception:
-    #     pass
+    try:
+        extension_units = dicom2fhirutils.gen_extension(
+            url="units"
+        )
+    except Exception:
+        pass
+    try:
+        if dicom2fhirutils.add_extension_value(
+            e=extension_units,
+            url="units",
+            value=ds[0x0054, 0x1001].value,
+            system="http://unitsofmeasure.org",
+            unit=None,
+            type="codeableconcept"
+        ):
+            ex_list.append(extension_units)
+    except Exception:
+        pass
 
     extension_NM.extension = ex_list
 

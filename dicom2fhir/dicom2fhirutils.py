@@ -230,11 +230,15 @@ def gen_coding(value, system, display=None):
         raise Exception(
             "More than one code for type Coding detected")
     if value is None:
-        return
-    c = coding.Coding()
-    c.system = system
-    c.code = value
-    c.display = display
+        if display is None:
+            return
+        c = coding.Coding()
+        c.display = display
+    else:
+        c = coding.Coding()
+        c.system = system
+        c.code = value
+        c.display = display
     return c
 
 
@@ -292,7 +296,7 @@ def gen_extension(url):
 def add_extension_value(e, url, value, system, unit, type, display=None, text=None):
 
     if value is None and text is None and display is None:
-        return
+        return None
 
     if type == "string":
         e.valueString = value
