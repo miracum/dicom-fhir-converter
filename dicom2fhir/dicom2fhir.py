@@ -216,7 +216,6 @@ def _add_imaging_study_series(study: imagingstudy.ImagingStudy, ds: dataset.File
 
 
 def _create_imaging_study(ds, fp, dcmDir, include_instances) -> imagingstudy.ImagingStudy:
-    study_list_modality_temp = []
     study_data = {}
 
     m = meta.Meta(profile=[
@@ -357,5 +356,7 @@ def process_dicom_2_fhir(dcmDir: str, include_instances: bool) -> imagingstudy.I
         imagingStudy.modality = mod_codings
     except Exception as e:
         pass
+
+    study_list_modality_global = []
 
     return imagingStudy, studyInstanceUID, accession_number
