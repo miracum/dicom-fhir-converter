@@ -1,6 +1,9 @@
 from datetime import datetime
+import os
+import logging
+from zoneinfo import ZoneInfo
+import pandas as pd
 
-from fhir.resources.R4B import imagingstudy
 from fhir.resources.R4B import identifier
 from fhir.resources.R4B import codeableconcept
 from fhir.resources.R4B import coding
@@ -10,9 +13,6 @@ from fhir.resources.R4B import fhirtypes
 from fhir.resources.R4B import reference
 from fhir.resources.R4B import extension
 from fhir.resources.R4B.quantity import Quantity
-import pandas as pd
-import os
-import logging
 
 TERMINOLOGY_CODING_SYS = "http://terminology.hl7.org/CodeSystem/v2-0203"
 TERMINOLOGY_CODING_SYS_CODE_ACCESSION = "ACSN"
@@ -197,7 +197,7 @@ def gen_started_datetime(dt, tm):
         dt_date.hour,
         dt_date.minute,
         dt_date.second,
-        tzinfo="+01:00"
+        tzinfo=ZoneInfo("Europe/Berlin")
     )
 
     return fhirDtm
