@@ -1,4 +1,5 @@
-fhir.resources>=7.0.2
+fhir.resources==7.0.2
+pydantic==1.10.21
 pydicom>=2.4.3
 setuptools
 lxml
