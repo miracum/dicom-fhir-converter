@@ -1,15 +1,13 @@
 import uuid
+import argparse
 from typing import List
 from fhir.resources.R4B.bundle import Bundle, BundleEntry, BundleEntryRequest
 from fhir.resources.R4B.resource import Resource
-import argparse
 
 from dicom2fhir import dicom2fhir
 
 # wrapper function to process study
-
-
-def process_study(root_path, output_path, include_instances, build_bundle):
+def process_study(root_path, output_path, include_instances, build_bundle, create_device):
 
     result_resource, study_instance_uid, accession_nr, dev_list = dicom2fhir.process_dicom_2_fhir(
         str(root_path), include_instances
@@ -32,24 +30,26 @@ def process_study(root_path, output_path, include_instances, build_bundle):
             with open(jsonfile, "w+") as outfile:
                 outfile.write(result_bundle.json())
         except Exception:
-            print("Unable to create JSON-file (probably missing identifier)")
+            print("Unable to create ImagingStudy JSON-file (probably missing identifier)")
     else:
         try:
             jsonfile = output_path + str(id) + "_imagingStudy.json"
             with open(jsonfile, "w+") as outfile:
                 outfile.write(result_resource.json())
         except Exception:
-            print("Unable to create JSON-file (probably missing identifier)")
+            print("Unable to create ImagingStudy JSON-file (probably missing identifier)")
 
-    for dev in dev_list:
-        dev_id = dev[1]
-        dev_resource = dev[0]
-        try:
-            jsonfile = output_path + "Device_" + str(dev_id) + ".json"
-            with open(jsonfile, "w+") as outfile:
-                outfile.write(dev_resource.json())
-        except Exception:
-            print("Unable to create JSON-file (probably missing identifier)")
+    #build device
+    if create_device:
+        for dev in dev_list:
+            dev_id = dev[1]
+            dev_resource = dev[0]
+            try:
+                jsonfile = output_path + "Device_" + str(dev_id) + ".json"
+                with open(jsonfile, "w+") as outfile:
+                    outfile.write(dev_resource.json())
+            except Exception:
+                print("Unable to create device JSON-file")
 
 # build FHIR bundle from resource
 def build_from_resources(resources: List[Resource], id: str | None) -> Bundle:
@@ -108,6 +108,14 @@ def arg_parser():
         action=argparse.BooleanOptionalAction,
         help="Option to build a FHIR bundle from the result resource"
     )
+    parser.add_argument(
+        "-d",
+        "--create_device",
+        dest="create_device",
+        default=False,
+        action=argparse.BooleanOptionalAction,
+        help="Option to create the respective device resource for the performed ImagingStudy"
+    )
     return parser
 
 
@@ -115,4 +123,4 @@ if __name__ == "__main__":
 
     args = arg_parser().parse_args()
 
-    process_study(args.input_path, args.output_path, args.include_instances, args.build_bundle)
+    process_study(args.input_path, args.output_path, args.include_instances, args.build_bundle, args.create_device)

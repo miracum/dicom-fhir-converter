@@ -16,14 +16,15 @@ This library utilizes the following projects:
 -o "output_path" (mandatory, output path to write json-file in) <br>
 --no-level_instance (optional, does not include instance level into ImagingStudy when set) <br>
 --build_bundle (optional, builds a FHIR bundle including the ImagingStudy when set) <br>
+--create_device (optional, creates the respective Device FHIR resource(s) which performed the ImagingStudy) <br>
 
 ### Sample call
 
 ```bash
-python dicom2fhir_wrapper.py -i "my_input_path" -o "my_output_path" --no-level_instance
+python3 dicom2fhir_wrapper.py -i "my_input_path" -o "my_output_path" --no-level_instance --create_device
 ```
 
-This call would convert the DICOM study in "my_input_path" into a FHIR Imaging study, without building a bundle and without including the instance level, and write the json-file in "my_output_path".
+This call would convert the DICOM study in "my_input_path" into a FHIR Imaging study without building a bundle and without including the instance level. Addiotionally, it would create the associated Device FHIR resource(s) and write the json-files in "my_output_path".
 
 
 The DICOM file represents a single instance within DICOM study. A study is a collection of instances grouped by series.
@@ -35,6 +36,22 @@ The Accession Number is usually used as the "identifier" for the ImagingStudy. I
 
 The model is meant to be self-inclusive (to mimic the DICOM structure), it does not produce separate resources for other resource types.
 Instead, it uses references to include all of the supporting data. 
+
+### References and identifiers
+
+#### Patient
+
+* the converter uses 9-digit Patient IDs
+* ImagingStudy.subject.identifier.value: PatientID
+* ImagingStudy.subject.reference: "Patient/" + hash("https://fhir.diz.uk-erlangen.de/identifiers/patient-id|" + PatientID)
+
+#### Device
+
+If set (see Usage), the converter can also create the associated Device ressource(s), which performed the ImagingStudy. To do this, the converter uses the serial number in the DICOM tag “DeviceSerialNumber” and the manufacturer of the device in the “Manufacturer” tag as well as the model name in the “ManufacturerModelName” tag.
+
+* Device.identifier: deviceSerialNumber
+* Device.id: hash256(deviceSerialnumber + "|" + manufacturer)
+* ImagingStudy.series.performer.actor: "Reference/Device" + hash256(deviceSerialnumber + "|" + manufacturer)
 
 ### Sample Output
 ```

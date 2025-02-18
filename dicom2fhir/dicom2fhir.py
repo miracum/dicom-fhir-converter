@@ -261,11 +261,6 @@ def _create_imaging_study(ds, fp, dcmDir, include_instances) -> imagingstudy.Ima
     patientRef.identifier = patIdent
     study_data["subject"] = patientRef
 
-    # study_data["endpoint"] = []
-    # endpoint = reference.Reference()
-    # endpoint.reference = "file://" + dcmDir
-    # study_data["endpoint"].append(endpoint)
-
     studyTime = None
     try:
         studyTime = ds.StudyTime

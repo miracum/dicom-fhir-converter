@@ -1,4 +1,3 @@
-import uuid
 import hashlib
 from fhir.resources import R4B as fr
 from fhir.resources.R4B import device
@@ -23,7 +22,7 @@ def create_device(manufacturer, manufacturerModelName, deviceSerialNumber) -> de
     ident.type = dicom2fhirutils.gen_codeable_concept(
         ["SNO"], "http://terminology.hl7.org/CodeSystem/v2-0203")
     ident.value = deviceSerialNumber
-    ident_id = deviceSerialNumber + manufacturer
+    ident_id = deviceSerialNumber + "|" + manufacturer
     hashedIdentifier = hashlib.sha256(
         ident_id.encode('utf-8')).hexdigest()
     data["identifier"] = [ident]
