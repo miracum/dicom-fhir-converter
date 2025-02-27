@@ -1,4 +1,3 @@
-import uuid
 import os
 from fhir.resources import R4B as fr
 from fhir.resources.R4B import reference
@@ -192,8 +191,9 @@ def _add_imaging_study_series(study: imagingstudy.ImagingStudy, ds: dataset.File
 
     global devices_list_global
 
-    try: 
-        dev, dev_id = create_device.create_device_resource(ds.Manufacturer, ds.ManufacturerModelName, ds.DeviceSerialNumber)
+    try:
+        dev, dev_id = create_device.create_device_resource(
+            ds.Manufacturer, ds.ManufacturerModelName, ds.DeviceSerialNumber)
         devices_list_global.append([dev, dev_id])
 
     except Exception:
@@ -210,7 +210,6 @@ def _add_imaging_study_series(study: imagingstudy.ImagingStudy, ds: dataset.File
     except Exception:
         pass
 
-
     # Creating New Series
     series = imagingstudy.ImagingStudySeries(**series_data)
 
@@ -226,7 +225,12 @@ def _create_imaging_study(ds, fp, dcmDir, include_instances) -> imagingstudy.Ima
     m = meta.Meta(profile=[
                   "https://www.medizininformatik-initiative.de/fhir/ext/modul-bildgebung/StructureDefinition/mii-pr-bildgebung-bildgebungsstudie"])
     study_data["meta"] = m
-    study_data["id"] = str(uuid.uuid4())
+
+    studyID = "https://fhir.diz.uk-erlangen.de/identifiers/imagingstudy-id|" + \
+        str(ds.StudyInstanceUID)
+    hashed_studyID = hashlib.sha256(
+        studyID.encode('utf-8')).hexdigest()
+    study_data["id"] = str(hashed_studyID)
     study_data["status"] = "available"
 
     try:

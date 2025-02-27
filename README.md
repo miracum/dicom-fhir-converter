@@ -37,7 +37,12 @@ The Accession Number is usually used as the "identifier" for the ImagingStudy. I
 The model is meant to be self-inclusive (to mimic the DICOM structure), it does not produce separate resources for other resource types.
 Instead, it uses references to include all of the supporting data. 
 
-### References and identifiers
+### References, IDs and identifiers
+
+#### ImagingStudy
+
+* ImagingStudy.id: hash("https://fhir.diz.uk-erlangen.de/identifiers/imagingstudy-id|" + StudyInstanceUID)
+* ImagingStudy.identifier: AccessionNumber OR (if AccessionNumber is not available) StudyInstanceUID
 
 #### Patient
 
