@@ -283,10 +283,11 @@ def _create_imaging_study(ds, fp, dcmDir, include_instances) -> imagingstudy.Ima
 
     procedures_list = []
 
+    # only write codes as text because it is verly likely a hospital-internal code system
     try:
         for p in procedures:
             concept = dicom2fhirutils.gen_codeable_concept(
-                None, None, None, p["code"])
+                [None], None, None, p["code"])
             procedures_list.append(concept)
     except Exception:
         pass
