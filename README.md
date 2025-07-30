@@ -1,14 +1,26 @@
 # DICOM-fhir-converter
+
 DICOM FHIR converter is an open source python library that accepts a DICOM directory as an input.
 It processes all files (instances) within that directory. It expects that directory will only contain files for a single study.
-If multiple studies detected, an exception is raised. 
+If multiple studies detected, an exception is raised.
 Using the usual convention, if file cannot be read, it will be skipped assuming it is not a DICOM file (no error raised).
 
 This library utilizes the following projects:
+
 - fhir.resources project (https://pypi.org/project/fhir.resources/) - used to create FHIR models
 - pyDICOM (https://pyDICOM.github.io/) - used to read DICOM instances
 
 ## Usage
+
+### Build terminologies
+
+If you wish and are able to, you can run:
+
+```bash
+python3 build_terminologies.py
+```
+
+This script downloads the respective terminologies in the current version from DICOM NEMA and overwrites them in the directory 'resources/terminologies'.
 
 ### Run Python script and give command line arguments as follows:
 
@@ -26,39 +38,40 @@ python3 dicom2fhir_wrapper.py -i "my_input_path" -o "my_output_path" --no-level_
 
 This call would convert the DICOM study in "my_input_path" into a FHIR Imaging study without building a bundle and without including the instance level. Addiotionally, it would create the associated Device FHIR resource(s) and write the json-files in "my_output_path".
 
-
 The DICOM file represents a single instance within DICOM study. A study is a collection of instances grouped by series.
 The assumption is that all instances are copied into a single folder prior to calling this function. The flattened structure is then consolidated into a single FHIR Imaging Study resource.
 
-## Structure 
-The FHIR Imaging Study id is being generated internally within the library. If selected, the ImagingStudy will be put into a FHIR Bundle. 
+## Structure
+
+The FHIR Imaging Study id is being generated internally within the library. If selected, the ImagingStudy will be put into a FHIR Bundle.
 The Accession Number is usually used as the "identifier" for the ImagingStudy. If this value is unavailable, the DICOM StudyInstanceUID will be used. If both values are not available, the process will stop with an error message and this study can not be converted.
 
 The model is meant to be self-inclusive (to mimic the DICOM structure), it does not produce separate resources for other resource types.
-Instead, it uses references to include all of the supporting data. 
+Instead, it uses references to include all of the supporting data.
 
 ### References, IDs and identifiers
 
 #### ImagingStudy
 
-* ImagingStudy.id: hash("https://fhir.diz.uk-erlangen.de/identifiers/imagingstudy-id|" + StudyInstanceUID)
-* ImagingStudy.identifier: AccessionNumber OR (if AccessionNumber is not available) StudyInstanceUID
+- ImagingStudy.id: hash("https://fhir.diz.uk-erlangen.de/identifiers/imagingstudy-id|" + StudyInstanceUID)
+- ImagingStudy.identifier: AccessionNumber OR (if AccessionNumber is not available) StudyInstanceUID
 
 #### Patient
 
-* the converter uses 9-digit Patient IDs
-* ImagingStudy.subject.identifier.value: PatientID
-* ImagingStudy.subject.reference: "Patient/" + hash("https://fhir.diz.uk-erlangen.de/identifiers/patient-id|" + PatientID)
+- the converter uses 9-digit Patient IDs
+- ImagingStudy.subject.identifier.value: PatientID
+- ImagingStudy.subject.reference: "Patient/" + hash("https://fhir.diz.uk-erlangen.de/identifiers/patient-id|" + PatientID)
 
 #### Device
 
 If set (see Usage), the converter can also create the associated Device ressource(s), which performed the ImagingStudy. To do this, the converter uses the serial number in the DICOM tag “DeviceSerialNumber” and the manufacturer of the device in the “Manufacturer” tag as well as the model name in the “ManufacturerModelName” tag.
 
-* Device.identifier: deviceSerialNumber
-* Device.id: hash256(deviceSerialnumber + "|" + manufacturer)
-* ImagingStudy.series.performer.actor: "Reference/Device" + hash256(deviceSerialnumber + "|" + manufacturer)
+- Device.identifier: deviceSerialNumber
+- Device.id: hash256(deviceSerialnumber + "|" + manufacturer)
+- ImagingStudy.series.performer.actor: "Reference/Device" + hash256(deviceSerialnumber + "|" + manufacturer)
 
 ### Sample Output
+
 ```
 {
     "resourceType": "ImagingStudy"
@@ -139,6 +152,3 @@ If set (see Usage), the converter can also create the associated Device ressourc
     ]
 }
 ```
-
-
-

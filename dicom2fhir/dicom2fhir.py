@@ -9,17 +9,8 @@ from pydicom import dataset
 from tqdm import tqdm
 import logging
 import hashlib
-
 from dicom2fhir import dicom2fhirutils
-from dicom2fhir import extension_MR
-from dicom2fhir import extension_CT
-from dicom2fhir import extension_MG_CR_DX
-from dicom2fhir import extension_PT
-from dicom2fhir import extension_NM
-from dicom2fhir import extension_contrast
-from dicom2fhir import extension_instance
-from dicom2fhir import extension_reason
-
+from dicom2fhir.extensions import extension_contrast, extension_CT, extension_instance, extension_MG_CR_DX, extension_MR, extension_NM, extension_PT, extension_reason
 from dicom2fhir import create_device
 
 

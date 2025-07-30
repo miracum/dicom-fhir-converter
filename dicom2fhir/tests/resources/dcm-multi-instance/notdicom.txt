@@ -1,1 +1,0 @@
-This is not a dicom file. It is placed here to test ability for the utility to skip files that cannot be read.
