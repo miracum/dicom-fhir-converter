@@ -1,31 +1,29 @@
-import uuid
 import os
 from fhir.resources import R4B as fr
 from fhir.resources.R4B import reference
+from fhir.resources.R4B import imagingstudy
+from fhir.resources.R4B import identifier
+from fhir.resources.R4B import meta
 from pydicom import dcmread
 from pydicom import dataset
 from tqdm import tqdm
 import logging
-
+import hashlib
 from dicom2fhir import dicom2fhirutils
+from dicom2fhir.extensions import extension_contrast, extension_CT, extension_instance, extension_MG_CR_DX, extension_MR, extension_NM, extension_PT, extension_reason
+from dicom2fhir import create_device
 
-import sys
-add_path = os.path.abspath(
-    os.path.join(
-        os.path.dirname(os.path.realpath(__file__)),
-        "../../dicom-fhir-extension/"
-    )
-)
-logging.info(f"Add to $PATH: '{add_path}'")
-sys.path.append(add_path)
-# dicom-fhir-extension brings ImagingStudySeriesErlangen, ImagingStudyErlangen
-from FeasibilityExtension import ImagingStudySeriesErlangen, ImagingStudyErlangen
+
+# global list for all distinct series modalities
+study_list_modality_global = []
+devices_list_global = []
 
 
 def _add_imaging_study_instance(
-    study: ImagingStudyErlangen,
-    series: ImagingStudySeriesErlangen,
-    ds: dataset.FileDataset
+    study: imagingstudy.ImagingStudy,
+    series: imagingstudy.ImagingStudySeries,
+    ds: dataset.FileDataset,
+    include_instances
 ):
     selectedInstance = None
     instanceUID = ds.SOPInstanceUID
@@ -49,26 +47,29 @@ def _add_imaging_study_instance(
     )
     instance_data["number"] = ds.InstanceNumber
 
-    try:
-        if series.modality.code == "SR":
-            seq = ds.ConceptNameCodeSequence
-            instance_data["title"] = seq[0x0008, 0x0104]
-        else:
-            instance_data["title"] = '\\'.join(ds.ImageType)
-    except Exception:
-        pass  # print("Unable to set instance title")
+    ########### extension stuff here ##########
 
-    # instantiate selected instancee here
+    instance_extensions = []
+
+    # instance extension
+    e_instance = extension_instance.gen_extension(ds)
+    if e_instance is not None:
+        instance_extensions.append(e_instance)
+
+    instance_data["extension"] = instance_extensions
+
+    # instantiate selected instance here
     selectedInstance = fr.imagingstudy.ImagingStudySeriesInstance(
         **instance_data)
 
-    series.instance.append(selectedInstance)
+    if include_instances:
+        series.instance.append(selectedInstance)
     study.numberOfInstances = study.numberOfInstances + 1
     series.numberOfInstances = series.numberOfInstances + 1
     return
 
 
-def _add_imaging_study_series(study: ImagingStudyErlangen, ds: dataset.FileDataset, fp):
+def _add_imaging_study_series(study: imagingstudy.ImagingStudy, ds: dataset.FileDataset, fp, include_instances):
 
     # inti data container
     series_data = {}
@@ -83,7 +84,8 @@ def _add_imaging_study_series(study: ImagingStudyErlangen, ds: dataset.FileDatas
         study.series = []
 
     if selectedSeries is not None:
-        _add_imaging_study_instance(study, selectedSeries, ds)
+        _add_imaging_study_instance(
+            study, selectedSeries, ds, include_instances)
         return
 
     series_data["uid"] = seriesInstanceUID
@@ -100,153 +102,218 @@ def _add_imaging_study_series(study: ImagingStudyErlangen, ds: dataset.FileDatas
         value=ds.Modality,
         system=dicom2fhirutils.ACQUISITION_MODALITY_SYS
     )
-    dicom2fhirutils.update_study_modality_list(study, series_data["modality"])
+
+    global study_list_modality_global
+    study_list_modality_global = dicom2fhirutils.update_study_modality_list(
+        study_list_modality_global, ds.Modality)
 
     stime = None
     try:
         stime = ds.SeriesTime
     except Exception:
-        pass  # print("Series TimeDate is missing")
+        pass
 
     try:
         sdate = ds.SeriesDate
         series_data["started"] = dicom2fhirutils.gen_started_datetime(
             sdate, stime)
     except Exception:
-        pass  # print("Series Date is missing")
+        pass
 
     try:
         series_data["bodySite"] = dicom2fhirutils.gen_bodysite_coding(
             ds.BodyPartExamined)
-        dicom2fhirutils.update_study_bodysite_list(
-            study, series_data["bodySite"])
     except Exception:
-        pass  # print ("Body Part Examined missing")
+        pass
 
     try:
         series_data["laterality"] = dicom2fhirutils.gen_coding_text_only(
             ds.Laterality)
-        dicom2fhirutils.update_study_laterality_list(
-            study, series_data["laterality"])
     except Exception:
-        pass  # print ("Laterality missing")
+        pass
 
-    # TODO: evaluate if we wonat to have inline "performer.actor" for the I am assuming "technician"
-    # PerformingPhysicianName	0x81050
-    # PerformingPhysicianIdentificationSequence	0x81052
+    ########### extension stuff here ##########
 
-    # extension stuff here
+    series_extensions = []
+
+    # MR extension
     if series_data["modality"].code == "MR":
-        try:
-            series_data["scanningSequence"] = dicom2fhirutils.gen_coding(
-                value=ds[0x0018, 0x0020].value,
-                system=dicom2fhirutils.SCANNING_SEQUENCE_SYS
-            )
-        except Exception:
-            pass
-        try:
-            series_data["scanningVariant"] = dicom2fhirutils.gen_codeable_concept(
-                value_list=[ds[0x0018, 0x0021].value],
-                system=dicom2fhirutils.SCANNING_VARIANT_SYS
-            )
-        except Exception:
-            pass
-        try:
-            series_data["echoTime"] = ds[0x0018, 0x0081].value
-        except Exception:
-            pass
+
+        e_MR = extension_MR.gen_extension(ds)
+        if e_MR is not None:
+            series_extensions.append(e_MR)
+
+    # CT extension
+    if series_data["modality"].code == "CT":
+
+        e_CT = extension_CT.gen_extension(ds)
+        if e_CT is not None:
+            series_extensions.append(e_CT)
+
+    # MG CR DX extension
+    if (series_data["modality"].code == "MG" or series_data["modality"].code == "CR" or series_data["modality"].code == "DX"):
+
+        e_MG_CR_DX = extension_MG_CR_DX.gen_extension(ds)
+        if e_MG_CR_DX is not None:
+            series_extensions.append(e_MG_CR_DX)
+
+    # PT extension
+    if (series_data["modality"].code == "PT"):
+
+        e_PT = extension_PT.gen_extension(ds)
+        if e_PT is not None:
+            series_extensions.append(e_PT)
+
+    # NM extension
+    if (series_data["modality"].code == "NM"):
+
+        e_NM = extension_NM.gen_extension(ds)
+        if e_NM is not None:
+            series_extensions.append(e_NM)
+
+    # contrast extension
+    e_contrast = extension_contrast.gen_extension(ds)
+    if e_contrast is not None:
+        series_extensions.append(e_contrast)
+
+    series_data["extension"] = series_extensions
+
+    ###### Creating device resource ########
+
+    global devices_list_global
+
+    try:
+        dev, dev_id = create_device.create_device_resource(
+            ds.Manufacturer, ds.ManufacturerModelName, ds.DeviceSerialNumber)
+        devices_list_global.append([dev, dev_id])
+
+    except Exception:
+        pass
+
+    try:
+        dev_ref = reference.Reference()
+        dev_ref.reference = "Device/"+str(dev_id)
+        series_data["performer"] = [
+            {
+                "actor": dev_ref
+            }
+        ]
+    except Exception:
+        pass
 
     # Creating New Series
-    series = ImagingStudySeriesErlangen(**series_data)
+    series = imagingstudy.ImagingStudySeries(**series_data)
 
     study.series.append(series)
     study.numberOfSeries = study.numberOfSeries + 1
-    _add_imaging_study_instance(study, series, ds)
+    _add_imaging_study_instance(study, series, ds, include_instances)
     return
 
 
-def _create_imaging_study(ds, fp, dcmDir) -> ImagingStudyErlangen:
+def _create_imaging_study(ds, fp, dcmDir, include_instances) -> imagingstudy.ImagingStudy:
     study_data = {}
-    study_data["id"] = str(uuid.uuid4())
+
+    m = meta.Meta(profile=[
+                  "https://www.medizininformatik-initiative.de/fhir/ext/modul-bildgebung/StructureDefinition/mii-pr-bildgebung-bildgebungsstudie"])
+    study_data["meta"] = m
+
+    studyID = "https://fhir.diz.uk-erlangen.de/identifiers/imagingstudy-id|" + \
+        str(ds.StudyInstanceUID)
+    hashed_studyID = hashlib.sha256(
+        studyID.encode('utf-8')).hexdigest()
+    study_data["id"] = str(hashed_studyID)
     study_data["status"] = "available"
+
     try:
         if ds.StudyDescription != '':
             study_data["description"] = ds.StudyDescription
     except Exception:
-        pass  # missing study description
-
+        pass
     study_data["identifier"] = []
-    study_data["identifier"].append(
-        dicom2fhirutils.gen_accession_identifier(ds.AccessionNumber))
-    study_data["identifier"].append(
-        dicom2fhirutils.gen_studyinstanceuid_identifier(ds.StudyInstanceUID))
+    if len(ds.AccessionNumber) > 0:
+        accession_nr = ds.AccessionNumber
+        study_data["identifier"].append(
+            dicom2fhirutils.gen_accession_identifier(accession_nr))
+    else:
+        logging.warning(
+            "No accession number availabe - using StudyInstanceUID as Identifier")
+        accession_nr = None
+        study_data["identifier"].append(
+            dicom2fhirutils.gen_studyinstanceuid_identifier(ds.StudyInstanceUID))
 
-    ipid = None
-    try:
-        ipid = ds.IssuerOfPatientID
-    except Exception:
-        pass  # print("Issuer of Patient ID is missing")
-
-    patientReference = reference.Reference()
-    patientReference.reference = ds.PatientID
-    study_data["subject"] = patientReference
-    study_data["endpoint"] = []
-    endpoint = reference.Reference()
-    endpoint.reference = "file://" + dcmDir
-
-    study_data["endpoint"].append(endpoint)
-
-    procedures = []
-    try:
-        procedures = dicom2fhirutils.dcm_coded_concept(ds.ProcedureCodeSequence)
-    except Exception:
-        pass  # procedure code sequence not found
-
-    study_data["procedureCode"] = dicom2fhirutils.gen_procedurecode_array(
-        procedures)
+    patID9 = str(ds.PatientID)[:9]
+    patIdentifier = "https://fhir.diz.uk-erlangen.de/identifiers/patient-id|"+patID9
+    hashedIdentifier = hashlib.sha256(
+        patIdentifier.encode('utf-8')).hexdigest()
+    patientReference = "Patient/"+hashedIdentifier
+    patientRef = reference.Reference()
+    patientRef.reference = patientReference
+    patIdent = identifier.Identifier()
+    patIdent.system = "https://fhir.diz.uk-erlangen.de/identifiers/patient-id"
+    patIdent.type = dicom2fhirutils.gen_codeable_concept(
+        ["MR"], "http://terminology.hl7.org/CodeSystem/v2-0203")
+    patIdent.value = patID9
+    patientRef.identifier = patIdent
+    study_data["subject"] = patientRef
 
     studyTime = None
     try:
         studyTime = ds.StudyTime
     except Exception:
-        pass  # print("Study Date is missing")
+        pass
 
     try:
         studyDate = ds.StudyDate
         study_data["started"] = dicom2fhirutils.gen_started_datetime(
             studyDate, studyTime)
     except Exception:
-        pass  # print("Study Date is missing")
-
-    # TODO: we can add "inline" referrer
-    # TODO: we can add "inline" reading radiologist.. (interpreter)
-
-    reason = None
-    reasonStr = None
-    try:
-        reason = dicom2fhirutils.dcm_coded_concept(
-            ds.ReasonForRequestedProcedureCodeSequence)
-    except Exception:
-        pass  # print("Reason for Request procedure Code Seq is not available")
-
-    try:
-        reasonStr = ds.ReasonForTheRequestedProcedure
-    except Exception:
-        pass  # print ("Reason for Requested procedures not found")
-
-    study_data["reasonCode"] = dicom2fhirutils.gen_reason(reason, reasonStr)
+        pass
 
     study_data["numberOfSeries"] = 0
     study_data["numberOfInstances"] = 0
 
+    study_data["modality"] = []
+
+    procedures = []
+    try:
+        procedures = dicom2fhirutils.dcm_coded_concept(
+            ds.ProcedureCodeSequence)
+    except Exception:
+        pass
+
+    procedures_list = []
+
+    # only write codes as text because it is verly likely a hospital-internal code system
+    try:
+        for p in procedures:
+            concept = dicom2fhirutils.gen_codeable_concept(
+                [None], None, None, p["code"])
+            procedures_list.append(concept)
+    except Exception:
+        pass
+
+    study_data["procedureCode"] = procedures_list
+
+    study_extensions = []
+
+    # reason extension
+    e_reason = extension_reason.gen_extension(ds)
+    if e_reason is not None:
+        study_extensions.append(e_reason)
+
+    study_data["extension"] = study_extensions
+
     # instantiate study here, when all required fields are available
-    study = ImagingStudyErlangen(**study_data)
+    study = imagingstudy.ImagingStudy(**study_data)
 
-    _add_imaging_study_series(study, ds, fp)
-    return study
+    _add_imaging_study_series(study, ds, fp, include_instances)
+
+    return study, accession_nr
 
 
-def process_dicom_2_fhir(dcmDir: str) -> ImagingStudyErlangen:
+def process_dicom_2_fhir(dcmDir: str, include_instances: bool) -> imagingstudy.ImagingStudy:
+
+    global study_list_modality_global
     files = []
     # TODO: subdirectory must be traversed
     for r, d, f in os.walk(dcmDir):
@@ -255,6 +322,7 @@ def process_dicom_2_fhir(dcmDir: str) -> ImagingStudyErlangen:
 
     studyInstanceUID = None
     imagingStudy = None
+    accession_number = None
     for fp in tqdm(files):
         try:
             with dcmread(fp, None, [0x7FE00010], force=True) as ds:
@@ -264,10 +332,27 @@ def process_dicom_2_fhir(dcmDir: str) -> ImagingStudyErlangen:
                     raise Exception(
                         "Incorrect DCM path, more than one study detected")
                 if imagingStudy is None:
-                    imagingStudy = _create_imaging_study(ds, fp, dcmDir)
+                    imagingStudy, accession_number = _create_imaging_study(
+                        ds, fp, dcmDir, include_instances)
                 else:
-                    _add_imaging_study_series(imagingStudy, ds, fp)
+                    _add_imaging_study_series(
+                        imagingStudy, ds, fp, include_instances)
         except Exception as e:
             logging.error(e)
             pass  # file is not a dicom file
-    return imagingStudy, studyInstanceUID
+
+    # add modality list to study level
+    try:
+        mod_codings = []
+        for mod in study_list_modality_global:
+            c = dicom2fhirutils.gen_coding(
+                value=mod,
+                system=dicom2fhirutils.ACQUISITION_MODALITY_SYS)
+            mod_codings.append(c)
+        imagingStudy.modality = mod_codings
+    except Exception as e:
+        pass
+
+    study_list_modality_global = []
+
+    return imagingStudy, studyInstanceUID, accession_number, devices_list_global
