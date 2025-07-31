@@ -1,0 +1,19 @@
+DICOM Value, Code Value, Code Meaning
+CNTS,{counts},Counts
+CPS,{counts}/s,Counts per second
+PROPCNTS,{propcounts},Proportional to counts
+PROPCPS,{propcounts}/s,Proportional to counts per second
+CM2,cm2,Centimeter**2
+CM2ML,cm2/ml,Centimeter**2/milliliter
+PCNT,%,Percent
+BQML,Bq/ml,Becquerels/milliliter
+MGMINML,mg/min/ml,Milligrams/minute/milliliter
+UMOLMINML,umol/min/ml,Micromole/minute/milliliter
+MLMING,ml/min/g,Milliliter/minute/gram
+MLG,ml/g,Milliliter/gram
+1CM,/cm,/Centimeter
+UMOLML,umol/ml,Micromole/milliliter
+NONE,1,no units
+MLMINML,ml/min/ml, Milliliter/minute/milliliter
+MLML,ml/ml, Milliliter/milliliter
+GML,g/ml,Gram/milliliter
