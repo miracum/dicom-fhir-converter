@@ -10,7 +10,14 @@ from tqdm import tqdm
 import logging
 import hashlib
 from dicom2fhir import dicom2fhirutils
-from dicom2fhir.extensions import extension_contrast, extension_CT, extension_instance, extension_MG_CR_DX, extension_MR, extension_NM, extension_PT, extension_reason
+from dicom2fhir.extensions import extension_MR
+from dicom2fhir.extensions import extension_CT
+from dicom2fhir.extensions import extension_MG_CR_DX
+from dicom2fhir.extensions import extension_PT
+from dicom2fhir.extensions import extension_NM
+from dicom2fhir.extensions import extension_contrast
+from dicom2fhir.extensions import extension_instance
+from dicom2fhir.extensions import extension_reason
 from dicom2fhir import create_device
 
 
@@ -217,11 +224,18 @@ def _create_imaging_study(ds, fp, dcmDir, include_instances) -> imagingstudy.Ima
                   "https://www.medizininformatik-initiative.de/fhir/ext/modul-bildgebung/StructureDefinition/mii-pr-bildgebung-bildgebungsstudie"])
     study_data["meta"] = m
 
-    studyID = "https://fhir.diz.uk-erlangen.de/identifiers/imagingstudy-id|" + \
-        str(ds.StudyInstanceUID)
-    hashed_studyID = hashlib.sha256(
-        studyID.encode('utf-8')).hexdigest()
-    study_data["id"] = str(hashed_studyID)
+    ident = identifier.Identifier()
+    ident.system = "https://fhir.diz.uk-erlangen.de/identifiers/radiology-accession-number"
+    ident.type = dicom2fhirutils.gen_codeable_concept(
+        ["ACSN"], "http://terminology.hl7.org/CodeSystem/v2-0203")
+    ident.value = ds.AccessionNumber
+    ident_id = "https://fhir.diz.uk-erlangen.de/identifiers/radiology-accession-number|" + \
+        str(ds.AccessionNumber)
+    hashedId = hashlib.sha256(
+        ident_id.encode('utf-8')).hexdigest()
+    study_data["identifier"] = [ident]
+    study_data["id"] = hashedId
+
     study_data["status"] = "available"
 
     try:
@@ -229,17 +243,6 @@ def _create_imaging_study(ds, fp, dcmDir, include_instances) -> imagingstudy.Ima
             study_data["description"] = ds.StudyDescription
     except Exception:
         pass
-    study_data["identifier"] = []
-    if len(ds.AccessionNumber) > 0:
-        accession_nr = ds.AccessionNumber
-        study_data["identifier"].append(
-            dicom2fhirutils.gen_accession_identifier(accession_nr))
-    else:
-        logging.warning(
-            "No accession number availabe - using StudyInstanceUID as Identifier")
-        accession_nr = None
-        study_data["identifier"].append(
-            dicom2fhirutils.gen_studyinstanceuid_identifier(ds.StudyInstanceUID))
 
     patID9 = str(ds.PatientID)[:9]
     patIdentifier = "https://fhir.diz.uk-erlangen.de/identifiers/patient-id|"+patID9
@@ -255,6 +258,24 @@ def _create_imaging_study(ds, fp, dcmDir, include_instances) -> imagingstudy.Ima
     patIdent.value = patID9
     patientRef.identifier = patIdent
     study_data["subject"] = patientRef
+
+    try:
+        encID9 = str(ds.AdmissionID)[:9]
+        encIdentifier = "​https://fhir.diz.uk-erlangen.de/identifiers/encounter-id|"+encID9
+        hashedIdentifier = hashlib.sha256(
+            encIdentifier.encode('utf-8')).hexdigest()
+        encReference = "Encounter/"+hashedIdentifier
+        encRef = reference.Reference()
+        encRef.reference = encReference
+        encIdent = identifier.Identifier()
+        encIdent.system = "https://fhir.diz.uk-erlangen.de/identifiers/encounter-id"
+        encIdent.type = dicom2fhirutils.gen_codeable_concept(
+            ["VN"], "http://terminology.hl7.org/CodeSystem/v2-0203")
+        encIdent.value = encID9
+        encRef.identifier = encIdent
+        study_data["encounter"] = encRef
+    except Exception:
+        pass
 
     studyTime = None
     try:
@@ -308,21 +329,19 @@ def _create_imaging_study(ds, fp, dcmDir, include_instances) -> imagingstudy.Ima
 
     _add_imaging_study_series(study, ds, fp, include_instances)
 
-    return study, accession_nr
+    return study
 
 
 def process_dicom_2_fhir(dcmDir: str, include_instances: bool) -> imagingstudy.ImagingStudy:
 
     global study_list_modality_global
     files = []
-    # TODO: subdirectory must be traversed
     for r, d, f in os.walk(dcmDir):
         for file in f:
             files.append(os.path.join(r, file))
 
     studyInstanceUID = None
     imagingStudy = None
-    accession_number = None
     for fp in tqdm(files):
         try:
             with dcmread(fp, None, [0x7FE00010], force=True) as ds:
@@ -332,7 +351,7 @@ def process_dicom_2_fhir(dcmDir: str, include_instances: bool) -> imagingstudy.I
                     raise Exception(
                         "Incorrect DCM path, more than one study detected")
                 if imagingStudy is None:
-                    imagingStudy, accession_number = _create_imaging_study(
+                    imagingStudy = _create_imaging_study(
                         ds, fp, dcmDir, include_instances)
                 else:
                     _add_imaging_study_series(
@@ -355,4 +374,4 @@ def process_dicom_2_fhir(dcmDir: str, include_instances: bool) -> imagingstudy.I
 
     study_list_modality_global = []
 
-    return imagingStudy, studyInstanceUID, accession_number, devices_list_global
+    return imagingStudy, devices_list_global
