@@ -7,6 +7,8 @@ from fhir.resources.R4B.resource import Resource
 from dicom2fhir import dicom2fhir
 
 # wrapper function to process study
+
+
 def process_study(root_path, output_path, include_instances, build_bundle, create_device):
 
     result_resource, study_instance_uid, accession_nr, dev_list = dicom2fhir.process_dicom_2_fhir(
@@ -33,13 +35,13 @@ def process_study(root_path, output_path, include_instances, build_bundle, creat
             print("Unable to create ImagingStudy JSON-file (probably missing identifier)")
     else:
         try:
-            jsonfile = output_path + str(id) + "_imagingStudy.json"
+            jsonfile = output_path + str(study_id) + "_imagingStudy.json"
             with open(jsonfile, "w+") as outfile:
                 outfile.write(result_resource.json())
         except Exception:
             print("Unable to create ImagingStudy JSON-file (probably missing identifier)")
 
-    #build device
+    # build device
     if create_device:
         for dev in dev_list:
             dev_id = dev[1]
@@ -52,6 +54,8 @@ def process_study(root_path, output_path, include_instances, build_bundle, creat
                 print("Unable to create device JSON-file")
 
 # build FHIR bundle from resource
+
+
 def build_from_resources(resources: List[Resource], id: str | None) -> Bundle:
     bundle_id = id
 
@@ -123,4 +127,5 @@ if __name__ == "__main__":
 
     args = arg_parser().parse_args()
 
-    process_study(args.input_path, args.output_path, args.include_instances, args.build_bundle, args.create_device)
+    process_study(args.input_path, args.output_path,
+                  args.include_instances, args.build_bundle, args.create_device)

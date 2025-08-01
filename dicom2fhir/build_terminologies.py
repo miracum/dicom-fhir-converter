@@ -11,6 +11,8 @@ RADIONUCLIDE_NM_MAPPING_URL = "https://dicom.nema.org/medical/dicom/current/outp
 RADIOPHARMACEUTICAL_NM_MAPPING_URL = "https://dicom.nema.org/medical/dicom/current/output/chtml/part16/sect_CID_25.html"
 RADIOPHARMACEUTICAL_PT_MAPPING_URL = "https://dicom.nema.org/medical/dicom/current/output/chtml/part16/sect_CID_4021.html"
 RADIONUCLIDE_PT_MAPPING_URL = "https://dicom.nema.org/medical/dicom/current/output/chtml/part16/sect_CID_4020.html"
+LATERALITY1_MAPPING_URL = "https://dicom.nema.org/medical/dicom/current/output/chtml/part16/sect_CID_244.html"
+LATERALITY2_MAPPING_URL = "https://dicom.nema.org/medical/dicom/current/output/chtml/part16/sect_CID_247.html"
 
 
 def download_body_part_mapping(url=BODYSITE_SNOMED_MAPPING_URL):
@@ -72,6 +74,11 @@ def main():
     df_rp2 = [download_other_mappings(
         url=RADIOPHARMACEUTICAL_PT_MAPPING_URL), "radiopharmaceutical_PT"]
     mappings.append(df_rp2)
+    df_lat1 = download_other_mappings(url=LATERALITY1_MAPPING_URL)
+    df_lat2 = download_other_mappings(url=LATERALITY2_MAPPING_URL)
+    df_lat = [pd.concat([df_lat1, df_lat2], axis=0,
+                        ignore_index=True), "laterality_snomed"]
+    mappings.append(df_lat)
 
     for mapping in mappings:
         save_json(mapping[0], mapping[1])

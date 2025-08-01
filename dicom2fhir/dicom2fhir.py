@@ -42,7 +42,7 @@ def _add_imaging_study_instance(
 
     instance_data["uid"] = instanceUID
     instance_data["sopClass"] = dicom2fhirutils.gen_coding(
-        value="urn:oid:" + ds.SOPClassUID,
+        code="urn:oid:" + ds.SOPClassUID,
         system=dicom2fhirutils.SOP_CLASS_SYS
     )
     instance_data["number"] = ds.InstanceNumber
@@ -99,7 +99,7 @@ def _add_imaging_study_series(study: imagingstudy.ImagingStudy, ds: dataset.File
     series_data["numberOfInstances"] = 0
 
     series_data["modality"] = dicom2fhirutils.gen_coding(
-        value=ds.Modality,
+        code=ds.Modality,
         system=dicom2fhirutils.ACQUISITION_MODALITY_SYS
     )
 
@@ -127,8 +127,18 @@ def _add_imaging_study_series(study: imagingstudy.ImagingStudy, ds: dataset.File
         pass
 
     try:
-        series_data["laterality"] = dicom2fhirutils.gen_coding_text_only(
-            ds.Laterality)
+        if ds.Laterality == "B":
+            laterality = "Bilateral"
+        elif ds.Laterality == "U":
+            laterality = "Unilateral"
+        elif ds.Laterality == "R":
+            laterality = "Right"
+        elif ds.Laterality == "L":
+            laterality = "Left"
+        else:
+            laterality = ds.Laterality
+        series_data["laterality"] = dicom2fhirutils.gen_laterality_coding(
+            laterality)
     except Exception:
         pass
 
@@ -346,7 +356,7 @@ def process_dicom_2_fhir(dcmDir: str, include_instances: bool) -> imagingstudy.I
         mod_codings = []
         for mod in study_list_modality_global:
             c = dicom2fhirutils.gen_coding(
-                value=mod,
+                code=mod,
                 system=dicom2fhirutils.ACQUISITION_MODALITY_SYS)
             mod_codings.append(c)
         imagingStudy.modality = mod_codings
