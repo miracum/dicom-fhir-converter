@@ -66,28 +66,6 @@ def get_lat_snomed(laterality: str, sctmapping: pd.DataFrame):
         row = match.iloc[0]
         return row["Code Value"], row["Code Meaning"]
 
-
-def gen_accession_identifier(id):
-    idf = identifier.Identifier()
-    idf.use = "usual"
-    idf.type = codeableconcept.CodeableConcept()
-    idf.type.coding = []
-    acsn = coding.Coding()
-    acsn.system = TERMINOLOGY_CODING_SYS
-    acsn.code = TERMINOLOGY_CODING_SYS_CODE_ACCESSION
-
-    idf.type.coding.append(acsn)
-    idf.value = id
-    return idf
-
-
-def gen_studyinstanceuid_identifier(id):
-    idf = identifier.Identifier()
-    idf.system = "urn:dicom:uid"
-    idf.value = "urn:oid:" + id
-    return idf
-
-
 def get_patient_resource_ids(PatientID, IssuerOfPatientID):
     idf = identifier.Identifier()
     idf.use = "usual"

@@ -1,6 +1,6 @@
-fhir.resources>=7.0.2
-pydicom>=2.4.3
-setuptools
+fhir.resources==7.1.0
+pydicom==2.4.4
+tqdm
+pydantic==2.10.4
 lxml
 pandas
-tqdm
