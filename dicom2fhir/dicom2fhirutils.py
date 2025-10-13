@@ -38,7 +38,7 @@ LATERALITY_SNOMED_MAPPING = pd.DataFrame(json.loads(
 
 
 def get_bd_snomed(dicom_bodypart: str, sctmapping: pd.DataFrame) -> dict[str, str] | None:
-    _rec = sctmapping.loc[sctmapping['Body Part Examined'] == dicom_bodypart]
+    _rec = sctmapping.loc[sctmapping['Body Part Examined'] == dicom_bodypart.upper()]
     if _rec.empty:
         return None
     return {
