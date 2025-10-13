@@ -210,6 +210,8 @@ def gen_coding(code: str, system: str | None = None, display: str | None = None)
         raise Exception(
             "More than one code for type Coding detected")
     c = coding.Coding()
+    if code is None:
+        return None
     c.code = code
     c.system = system
     c.display = display
