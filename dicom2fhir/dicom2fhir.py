@@ -16,6 +16,7 @@ from dicom2fhir.extensions import extension_MG_CR_DX
 from dicom2fhir.extensions import extension_PT
 from dicom2fhir.extensions import extension_NM
 from dicom2fhir.extensions import extension_contrast
+from dicom2fhir.extensions import extension_sliceThickness
 from dicom2fhir.extensions import extension_instance
 from dicom2fhir.extensions import extension_reason
 from dicom2fhir import create_device
@@ -192,6 +193,12 @@ def _add_imaging_study_series(study: imagingstudy.ImagingStudy, ds: dataset.File
     e_contrast = extension_contrast.gen_extension(ds)
     if e_contrast is not None:
         series_extensions.append(e_contrast)
+
+    if not include_instances:
+        # slice thickness extension
+        e_sliceThickness = extension_sliceThickness.gen_extension(ds)
+        if e_sliceThickness is not None:
+            series_extensions.append(e_sliceThickness)
 
     series_data["extension"] = series_extensions
 

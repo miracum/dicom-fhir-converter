@@ -112,6 +112,26 @@ def gen_extension(ds):
     except Exception:
         pass
 
+    # convolutional Kernel
+    try:
+        extension_convolutionalKernel = dicom2fhirutils.gen_extension(
+            url="convolutionalKernel"
+        )
+    except Exception:
+        pass
+    try:
+        if dicom2fhirutils.add_extension_value(
+            e=extension_xRayTubeCurrent,
+            url="convolutionalKernel",
+            value=ds[0x0018, 0x1210].value,
+            system=None,
+            unit=None,
+            type="string"
+        ):
+            ex_list.append(extension_convolutionalKernel)
+    except Exception:
+        pass
+
     extension_CT.extension = ex_list
 
     if not extension_CT.extension:
