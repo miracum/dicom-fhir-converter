@@ -6,7 +6,7 @@ def gen_extension(ds):
     ex_list = []
 
     try:
-        extension_sliceThickness = dicom2fhirutils.gen_extension(
+        extension_ST = dicom2fhirutils.gen_extension(
             url="https://www.medizininformatik-initiative.de/fhir/ext/modul-bildgebung/StructureDefinition/mii-ex-bildgebung-serie-schichtdicke"
         )
     except Exception:
@@ -32,9 +32,9 @@ def gen_extension(ds):
     except Exception:
         return None
 
-    extension_sliceThickness.extension = ex_list
+    extension_ST.extension = ex_list
 
-    if not extension_sliceThickness.extension:
+    if not extension_ST.extension:
         return None
 
-    return extension_sliceThickness
+    return extension_ST
