@@ -121,7 +121,7 @@ def gen_extension(ds):
         pass
     try:
         if dicom2fhirutils.add_extension_value(
-            e=extension_xRayTubeCurrent,
+            e=extension_convolutionalKernel,
             url="convolutionalKernel",
             value=ds[0x0018, 0x1210].value,
             system=None,
