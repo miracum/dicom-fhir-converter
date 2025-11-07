@@ -15,6 +15,7 @@ from dicom2fhir.extensions import extension_CT
 from dicom2fhir.extensions import extension_MG_CR_DX
 from dicom2fhir.extensions import extension_PT
 from dicom2fhir.extensions import extension_NM
+from dicom2fhir.extensions import extension_US
 from dicom2fhir.extensions import extension_contrast
 from dicom2fhir.extensions import extension_sliceThickness
 from dicom2fhir.extensions import extension_instance
@@ -188,6 +189,13 @@ def _add_imaging_study_series(study: imagingstudy.ImagingStudy, ds: dataset.File
         e_NM = extension_NM.gen_extension(ds)
         if e_NM is not None:
             series_extensions.append(e_NM)
+
+    # US extension
+    if (series_data["modality"].code == "US"):
+
+        e_US = extension_US.gen_extension(ds)
+        if e_US is not None:
+            series_extensions.append(e_US)
 
     # contrast extension
     e_contrast = extension_contrast.gen_extension(ds)

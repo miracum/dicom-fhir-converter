@@ -104,6 +104,31 @@ def gen_extension(ds):
     except Exception:
         pass
 
+    # burnedInAnnotation
+    try:
+        extension_burnedInAnnotation = dicom2fhirutils.gen_extension(
+            url="burnedInAnnotation"
+        )
+    except Exception:
+        pass
+    try:
+        if ((ds[0x0028, 0x0301].value == "YES") or (ds[0x0028, 0x0301].value[0] == "YES")):
+            valueBurnedIn = True
+        else:
+            valueBurnedIn = False
+
+        if dicom2fhirutils.add_extension_value(
+            e=extension_burnedInAnnotation,
+            url="burnedInAnnotation",
+            value=valueBurnedIn,
+            system=None,
+            unit=None,
+            type="boolean"
+        ):
+            ex_list.append(extension_burnedInAnnotation)
+    except Exception:
+        return None
+
     extension_instance.extension = ex_list
 
     if not extension_instance.extension:
