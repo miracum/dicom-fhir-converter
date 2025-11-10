@@ -23,10 +23,12 @@ def gen_extension(ds):
         transducer_type = ds[0x0018, 0x6031].value
         if len(transducer_type.split()) > 1:
             counter = 0
+            transducer_type_concat = ""
             for v in transducer_type.split():
                 if counter != 0:
-                    transducer_type_concat += "_"
-                transducer_type_concat += v
+                    transducer_type_concat = transducer_type_concat + "_"
+                transducer_type_concat = transducer_type_concat + v
+                counter += 1
 
         if dicom2fhirutils.add_extension_value(
             e=extension_transducerType,

@@ -22,7 +22,7 @@ python3 build_terminologies.py
 
 This script downloads the respective terminologies in the current version from DICOM NEMA and overwrites them in the directory 'resources/terminologies'.
 
-### This branch is exclusively used for the operation of the DICOM-to-FHIR-Pipeline @ Uniklinikum Erlangen. See more here: [CTP-Pipelibe](https://git.uk-erlangen.de/mik-ifm/ths/CTP-Pipeline). The neccessary dicom2fhir_wrapper.py script is not needed in this deployment as it is deployed in the repository linked above. Therefore this branch is not able to and not supposed to work stand-alone.
+### This branch is exclusively used for the operation of the DICOM-to-FHIR-Pipeline @ Uniklinikum Erlangen. See more here: [CTP-Pipeline](https://git.uk-erlangen.de/mik-ifm/ths/CTP-Pipeline). The neccessary dicom2fhir_wrapper.py script is not needed in this deployment as it is deployed in the repository linked above. Therefore this branch is not able to and not supposed to work stand-alone.
 
 ## Structure
 
