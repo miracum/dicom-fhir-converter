@@ -29,6 +29,8 @@ def gen_extension(ds):
                     transducer_type_concat = transducer_type_concat + "_"
                 transducer_type_concat = transducer_type_concat + v
                 counter += 1
+        else:
+            transducer_type_concat = transducer_type
 
         if dicom2fhirutils.add_extension_value(
             e=extension_transducerType,
