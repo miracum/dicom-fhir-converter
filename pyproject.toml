@@ -38,7 +38,11 @@ version_variable = [
 branch = "main"
 changelog_file = "CHANGELOG.md"
 upload_to_vcs_release = true
-build_command = "uv build"
+build_command = """
+    python -m pip install -e '.[build]'
+    uv lock --upgrade-package "dicom-fhir-converter"
+    uv build
+"""
 
 [tool.semantic_release.commit_parser_options]
 allowed_tags = ["feat", "fix", "chore", "docs", "refactor", "perf", "test"]
