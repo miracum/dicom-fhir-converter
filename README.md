@@ -14,8 +14,8 @@ This library utilizes the following projects:
 
 ### Set your internal settings via settings.py:
 
-dicom_input_path: input path of DICOM study <br>
-fhir_output_path: output path to write json-file/bundles in <br>
+dicom_input_path: input path of DICOM study (end with /)<br>
+fhir_output_path: output path to write json-file/bundles in (end with /) <br>
 level_instance: include instance level into ImagingStudy when set to True <br>
 build_bundles: builds a FHIR bundle including the ImagingStudy when set <br>
 create_device: creates the respective Device FHIR resource(s) which performed the ImagingStudy <br>
