@@ -11,7 +11,7 @@ import logging
 import hashlib
 from settings import settings
 import dicom2fhirutils
-from extensions import extension_contrast, extension_CT, extension_instance, extension_MG_CR_DX, extension_MR, extension_NM, extension_PT, extension_reason
+from extensions import extension_contrast, extension_CT, extension_instance, extension_MG_CR_DX, extension_MR, extension_NM, extension_US, extension_PT, extension_reason, extension_sliceThickness
 import create_device
 
 
@@ -182,10 +182,23 @@ def _add_imaging_study_series(study: imagingstudy.ImagingStudy, ds: dataset.File
         if e_NM is not None:
             series_extensions.append(e_NM)
 
+    # US extension
+    if (series_data["modality"].code == "US"):
+
+        e_US = extension_US.gen_extension(ds)
+        if e_US is not None:
+            series_extensions.append(e_US)
+
     # contrast extension
     e_contrast = extension_contrast.gen_extension(ds)
     if e_contrast is not None:
         series_extensions.append(e_contrast)
+
+    if not include_instances:
+        # slice thickness extension
+        e_sliceThickness = extension_sliceThickness.gen_extension(ds)
+        if e_sliceThickness is not None:
+            series_extensions.append(e_sliceThickness)
 
     series_data["extension"] = series_extensions
 
