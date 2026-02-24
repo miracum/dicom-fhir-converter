@@ -14,8 +14,8 @@ class FHIRSettings:
 @ts.settings
 class Settings:
     fhir: FHIRSettings
-    dicom_input_path: str = "C:/Users/iancuaa/Desktop/study/"
-    fhir_output_path: str = "C:/Users/iancuaa/Desktop/output/"
+    dicom_input_path: str = ""
+    fhir_output_path: str = ""
     level_instance: bool = True
     build_bundles: bool = True
     create_device: bool = True
@@ -29,3 +29,4 @@ settings = ts.load_settings(
     Settings,
     loaders=loaders
 )
+
