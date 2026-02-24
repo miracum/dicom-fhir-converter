@@ -3,6 +3,7 @@ import argparse
 from typing import List
 from fhir.resources.R4B.bundle import Bundle, BundleEntry, BundleEntryRequest
 from fhir.resources.R4B.resource import Resource
+from dicom2fhir.settings import settings
 
 from dicom2fhir import dicom2fhir
 
@@ -127,5 +128,7 @@ if __name__ == "__main__":
 
     args = arg_parser().parse_args()
 
-    process_study(args.input_path, args.output_path,
-                  args.include_instances, args.build_bundle, args.create_device)
+    process_study(settings.dicom_input_path, settings.fhir_output_path,
+                  settings.level_instance, settings.build_bundles, settings.create_device)
+    # process_study(args.input_path, args.output_path,
+    #               args.include_instances, args.build_bundle, args.create_device)

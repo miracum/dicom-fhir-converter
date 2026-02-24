@@ -9,6 +9,7 @@ from pydicom import dataset
 from tqdm import tqdm
 import logging
 import hashlib
+from dicom2fhir.settings import settings
 from dicom2fhir import dicom2fhirutils
 from dicom2fhir.extensions import extension_contrast, extension_CT, extension_instance, extension_MG_CR_DX, extension_MR, extension_NM, extension_PT, extension_reason
 from dicom2fhir import create_device
@@ -223,12 +224,11 @@ def _add_imaging_study_series(study: imagingstudy.ImagingStudy, ds: dataset.File
 def _create_imaging_study(ds, fp, dcmDir, include_instances) -> imagingstudy.ImagingStudy:
     study_data = {}
 
-    m = meta.Meta(profile=[
-                  "https://www.medizininformatik-initiative.de/fhir/ext/modul-bildgebung/StructureDefinition/mii-pr-bildgebung-bildgebungsstudie"])
+    m = meta.Meta(profile=[settings.fhir.imagingstudy_meta_profile])
     study_data["meta"] = m
 
-    studyID = "https://fhir.diz.uk-erlangen.de/identifiers/imagingstudy-id|" + \
-        str(ds.StudyInstanceUID)
+    studyID = settings.fhir.imagingstudy_identifier_system + \
+        "|" + str(ds.StudyInstanceUID)
     hashed_studyID = hashlib.sha256(
         studyID.encode('utf-8')).hexdigest()
     study_data["id"] = str(hashed_studyID)
@@ -251,18 +251,18 @@ def _create_imaging_study(ds, fp, dcmDir, include_instances) -> imagingstudy.Ima
         study_data["identifier"].append(
             dicom2fhirutils.gen_studyinstanceuid_identifier(ds.StudyInstanceUID))
 
-    patID9 = str(ds.PatientID)[:9]
-    patIdentifier = "https://fhir.diz.uk-erlangen.de/identifiers/patient-id|"+patID9
+    patID = str(ds.PatientID)[:settings.fhir.patient_id_positions]
+    patIdentifier = settings.fhir.patient_identifier_system+"|"+patID
     hashedIdentifier = hashlib.sha256(
         patIdentifier.encode('utf-8')).hexdigest()
     patientReference = "Patient/"+hashedIdentifier
     patientRef = reference.Reference()
     patientRef.reference = patientReference
     patIdent = identifier.Identifier()
-    patIdent.system = "https://fhir.diz.uk-erlangen.de/identifiers/patient-id"
+    patIdent.system = settings.fhir.patient_identifier_system
     patIdent.type = dicom2fhirutils.gen_codeable_concept(
         ["MR"], "http://terminology.hl7.org/CodeSystem/v2-0203")
-    patIdent.value = patID9
+    patIdent.value = patID
     patientRef.identifier = patIdent
     study_data["subject"] = patientRef
 

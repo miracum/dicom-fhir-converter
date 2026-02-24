@@ -22,21 +22,13 @@ python3 build_terminologies.py
 
 This script downloads the respective terminologies in the current version from DICOM NEMA and overwrites them in the directory 'resources/terminologies'.
 
-### Run Python script and give command line arguments as follows:
+### Set your internal settings via settings.py:
 
--i "input_path" (mandatory, input path of DICOM study) <br>
--o "output_path" (mandatory, output path to write json-file in) <br>
---no-level_instance (optional, does not include instance level into ImagingStudy when set) <br>
---build_bundle (optional, builds a FHIR bundle including the ImagingStudy when set) <br>
---create_device (optional, creates the respective Device FHIR resource(s) which performed the ImagingStudy) <br>
-
-### Sample call
-
-```bash
-python3 dicom2fhir_wrapper.py -i "my_input_path" -o "my_output_path" --no-level_instance --create_device
-```
-
-This call would convert the DICOM study in "my_input_path" into a FHIR Imaging study without building a bundle and without including the instance level. Addiotionally, it would create the associated Device FHIR resource(s) and write the json-files in "my_output_path".
+dicom_input_path: input path of DICOM study <br>
+fhir_output_path: output path to write json-file/bundles in <br>
+level_instance: include instance level into ImagingStudy when set to True <br>
+build_bundles: builds a FHIR bundle including the ImagingStudy when set <br>
+create_device: creates the respective Device FHIR resource(s) which performed the ImagingStudy <br>
 
 The DICOM file represents a single instance within DICOM study. A study is a collection of instances grouped by series.
 The assumption is that all instances are copied into a single folder prior to calling this function. The flattened structure is then consolidated into a single FHIR Imaging Study resource.
@@ -51,22 +43,26 @@ Instead, it uses references to include all of the supporting data.
 
 ### References, IDs and identifiers
 
+The respective systems can be set in settings.py as well and are used in the FHIR conversion.
+
 #### ImagingStudy
 
-- ImagingStudy.id: hash("https://fhir.diz.uk-erlangen.de/identifiers/imagingstudy-id|" + StudyInstanceUID)
+- ImagingStudy.id: hash("your-system" + "|" + StudyInstanceUID)
 - ImagingStudy.identifier: AccessionNumber OR (if AccessionNumber is not available) StudyInstanceUID
 
 #### Patient
 
-- the converter uses 9-digit Patient IDs
+- patient_id_positions indicates the number of positions which are used from the PatientID (0-n). If you wish to use all positions available, set a higher number (e.g. 50)
 - ImagingStudy.subject.identifier.value: PatientID
-- ImagingStudy.subject.reference: "Patient/" + hash("https://fhir.diz.uk-erlangen.de/identifiers/patient-id|" + PatientID)
+- ImagingStudy.subject.reference: "Patient/" + hash("your-system" + "|" + PatientID)
 
 #### Device
 
 If set (see Usage), the converter can also create the associated Device ressource(s), which performed the ImagingStudy. To do this, the converter uses the serial number in the DICOM tag “DeviceSerialNumber” and the manufacturer of the device in the “Manufacturer” tag as well as the model name in the “ManufacturerModelName” tag.
+Attention: manufacterer can contain whitespaces!
 
-- Device.identifier: deviceSerialNumber
+- Device.identifier.system: "your-system"
+- Device.identifier.value: deviceSerialNumber
 - Device.id: hash256(deviceSerialnumber + "|" + manufacturer)
 - ImagingStudy.series.performer.actor: "Reference/Device" + hash256(deviceSerialnumber + "|" + manufacturer)
 
