@@ -35,11 +35,16 @@ jobs:
         run: |
           git reset --hard ${{ github.sha }}
 
-      - name: Setup | Install uv
-        uses: asdf-vm/actions/install@1902764435ca0dd2f3388eea723a4f92a4eb8302 # v4.0.2
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.12
 
-      - name: Setup | Install Python & Project dependencies
-        run: uv sync --extra build
+      - name: Install project dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install uv python-semantic-release build
+          uv sync --all-extras --dev
 
       - name: Setup | Download Build Artifacts
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
