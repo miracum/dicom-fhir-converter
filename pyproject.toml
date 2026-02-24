@@ -1,0 +1,44 @@
+[project]
+name = "dicom-fhir-converter"
+version = "1.0.0"
+description = "DICOM to FHIR conversion"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.133.0",
+    "fhir.resources>=8.0.0",
+    "pydicom>=2.4.3",
+    "lxml>=5.0.0",
+    "pandas>=2.1.3",
+    "tqdm>=4.67.1",
+    "pydantic>=2.10.5",
+    "typed-settings[cattrs,dotenv]>=25.3.0"
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+    "python-semantic-release>=10.5.3",
+    "ruff>=0.15.2",
+]
+[tool.semantic_release]
+version_variable = [
+    "pyproject.toml:project.version"
+]
+branch = "main"
+changelog_file = "CHANGELOG.md"
+upload_to_vcs_release = true
+build_command = "uv build"
+
+[tool.semantic_release.commit_parser_options]
+allowed_tags = ["feat", "fix", "chore", "docs", "refactor", "perf", "test"]

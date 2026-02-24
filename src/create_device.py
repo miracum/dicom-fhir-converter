@@ -4,7 +4,7 @@ from fhir.resources.R4B import identifier
 from fhir.resources.R4B import meta
 
 from dicom2fhir import dicom2fhirutils
-from dicom2fhir.settings import settings
+from settings import settings
 
 SERIAL_NUMBER_SYS = "http://dicom.nema.org/resources/ontology/DCM"
 

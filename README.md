@@ -12,16 +12,6 @@ This library utilizes the following projects:
 
 ## Usage
 
-### Build terminologies
-
-If you wish and are able to, you can run:
-
-```bash
-python3 build_terminologies.py
-```
-
-This script downloads the respective terminologies in the current version from DICOM NEMA and overwrites them in the directory 'resources/terminologies'.
-
 ### Set your internal settings via settings.py:
 
 dicom_input_path: input path of DICOM study <br>
@@ -30,8 +20,28 @@ level_instance: include instance level into ImagingStudy when set to True <br>
 build_bundles: builds a FHIR bundle including the ImagingStudy when set <br>
 create_device: creates the respective Device FHIR resource(s) which performed the ImagingStudy <br>
 
-The DICOM file represents a single instance within DICOM study. A study is a collection of instances grouped by series.
-The assumption is that all instances are copied into a single folder prior to calling this function. The flattened structure is then consolidated into a single FHIR Imaging Study resource.
+### Install dependencied
+
+```bash
+uv sync
+source .venv/bin/activate
+```
+
+### Build terminologies
+
+If you wish and are able to, you can run:
+
+```bash
+uv run src/build_terminologies.py
+```
+
+This script downloads the respective terminologies in the current version from DICOM NEMA and overwrites them in the directory 'resources/terminologies'.
+
+### Run converter
+
+```bash
+uv run main.py
+```
 
 ## Structure
 

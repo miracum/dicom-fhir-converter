@@ -9,10 +9,10 @@ from pydicom import dataset
 from tqdm import tqdm
 import logging
 import hashlib
-from dicom2fhir.settings import settings
-from dicom2fhir import dicom2fhirutils
-from dicom2fhir.extensions import extension_contrast, extension_CT, extension_instance, extension_MG_CR_DX, extension_MR, extension_NM, extension_PT, extension_reason
-from dicom2fhir import create_device
+from settings import settings
+import dicom2fhirutils
+from extensions import extension_contrast, extension_CT, extension_instance, extension_MG_CR_DX, extension_MR, extension_NM, extension_PT, extension_reason
+import create_device
 
 
 # global list for all distinct series modalities

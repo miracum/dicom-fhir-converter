@@ -1,13 +1,10 @@
 import uuid
-import argparse
 from typing import List
 from fhir.resources.R4B.bundle import Bundle, BundleEntry, BundleEntryRequest
 from fhir.resources.R4B.resource import Resource
-from dicom2fhir.settings import settings
+from src.settings import settings
 
-from dicom2fhir import dicom2fhir
-
-# wrapper function to process study
+from src import dicom2fhir
 
 
 def process_study(root_path, output_path, include_instances, build_bundle, create_device):
@@ -80,55 +77,7 @@ def build_from_resources(resources: List[Resource], id: str | None) -> Bundle:
     return bundle
 
 
-def arg_parser():
-
-    parser = argparse.ArgumentParser(add_help=False)
-    parser.add_argument(
-        "-i",
-        "--input_path",
-        dest="input_path",
-        type=str,
-        help="The path of the study to be processed."
-    )
-    parser.add_argument(
-        "-o",
-        "--output_path",
-        dest="output_path",
-        type=str,
-        help="The path to write the output file in."
-    )
-    parser.add_argument(
-        "-l",
-        "--level_instance",
-        dest="include_instances",
-        default=True,
-        action=argparse.BooleanOptionalAction,
-        help="Option to exclude DICOM instance level from resource"
-    )
-    parser.add_argument(
-        "-b",
-        "--build_bundle",
-        dest="build_bundle",
-        default=False,
-        action=argparse.BooleanOptionalAction,
-        help="Option to build a FHIR bundle from the result resource"
-    )
-    parser.add_argument(
-        "-d",
-        "--create_device",
-        dest="create_device",
-        default=False,
-        action=argparse.BooleanOptionalAction,
-        help="Option to create the respective device resource for the performed ImagingStudy"
-    )
-    return parser
-
-
 if __name__ == "__main__":
-
-    args = arg_parser().parse_args()
 
     process_study(settings.dicom_input_path, settings.fhir_output_path,
                   settings.level_instance, settings.build_bundles, settings.create_device)
-    # process_study(args.input_path, args.output_path,
-    #               args.include_instances, args.build_bundle, args.create_device)
