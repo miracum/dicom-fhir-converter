@@ -64,10 +64,10 @@ def build_from_resources(resources: List[Resource], id: str | None) -> Bundle:
 
     for resource in resources:
         request = BundleEntryRequest(
-            **{"url": f"{resource.resource_type}/{resource.id}", "method": "PUT"}
+            **{"url": f"{resource.__resource_type__}/{resource.id}", "method": "PUT"}
         )
 
-        entry = BundleEntry.construct()
+        entry = BundleEntry.model_construct()
         entry.request = request
         entry.fullUrl = request.url
         entry.resource = resource
